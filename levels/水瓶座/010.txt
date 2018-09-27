@@ -1,0 +1,1 @@
+{"cubeCntX":"4","cubeCntY":"4","cubeCntZ":"4","groupsDef":[{"s":39,"e":43},{"s":41,"e":42,"lady":true},{"s":19,"e":35},{"s":1,"e":3},{"s":0,"e":32}]}
