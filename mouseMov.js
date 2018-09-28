@@ -121,7 +121,6 @@ var initMouseMov = function (renderer, scene, camera, groups, groupPlaying){
           }
           else
             console.log("chooseDir error.", chooseDir);
-          // movSound.currentTime = 0;   movSound.play();
         }
         var intersect = intersectObjects(pointer, [plane]);
         if (intersect) {

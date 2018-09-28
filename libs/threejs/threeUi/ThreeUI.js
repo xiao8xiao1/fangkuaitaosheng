@@ -64,6 +64,7 @@ var ThreeUI = function(gameCanvas, height) {
 		-this.height* DPR / 2,
 		0, 30
 	);
+	this.camera.position.z = 10;
 	this.scene = new THREE.Scene();	
 	this.movobjCnt = 0;
 	this.hasMoved = false;
@@ -432,7 +433,7 @@ ThreeUI.prototype.setPlaneMovHeight = function(newHeight) {
 	this.planeMov = new THREE.Mesh(planeGeo, material);	
 	this.planeMov.matrixAutoUpdate = false;
 	this.planeMov.translateY(-0.5*(newHeight - this.height)*DPR)
-	this.planeMov.translateZ(-1)
+	this.planeMov.translateZ(1)
 	this.planeMov.updateMatrix()
 	this.scene.add(this.planeMov);
 	this.textureMov.needsUpdate = true;
@@ -499,8 +500,8 @@ function onUp(e) {
     moveY = clickStartY - eClientY;
     var maxY = (scope.newHeight - scope.height)*DPR/2
 	var minY = -maxY
-	maxY += 136*DPR
-    if (scope.planeMov.position.y < minY) {
+
+	if (scope.planeMov.position.y < minY) {
         scope.planeMov.position.y = minY;  scope.planeMov.updateMatrix()
     } else if (scope.planeMov.position.y > maxY) {
         scope.planeMov.position.y = maxY;  scope.planeMov.updateMatrix()

@@ -52,13 +52,7 @@ var PlaceUi = function (paraUi) {
     var fenxiang = ui.createGroup(38, 630, 50, 80);
       var temp = ui.createSprite('images/fenxiang.png',0, 0, 50, 50);  temp.parent = fenxiang;
       var textTemp = ui.createText('分享', 20, family, 'white', 0, 0);  setTextButtomGroup(textTemp, fenxiang)
-      fenxiang.onClick(function() {
-        console.log('fenxiang!');
-        // wx.showShareMenu({withShareTicket:true})
-        wx.shareAppMessage({
-          title: '小白逃生'
-        })
-      });
+      fenxiang.onClick(shareApp);
 
     var rankingSprite = ui.createGroup(133, 630, 50, 80);
       var temp = ui.createSprite('images/paihang.png', 0, 0, 50, 50);  temp.parent = rankingSprite;
@@ -148,12 +142,15 @@ var PlaceUi = function (paraUi) {
         groupTut.visible = false;
         groupTut_01.visible = false;        
         groupPlaying.visible = false;
-        groupStart.visible = true;
+        // groupStart.visible = true;
         groupDirs.visible = true;
       });  
 
     textDirFile = ui.createText('', 24, family, 'black', 70, 5);
-    rectReturn.parent= textDirFile.parent = groupPlaying;
+    var temp = ui.createSprite('images/fenxiang.png',20, 660, 50, 50);
+    temp.onClick(shareApp);
+
+    rectReturn.parent= textDirFile.parent = temp.parent= groupPlaying;
   }
 
   //过关
@@ -262,14 +259,16 @@ function createLevelsInADir(index)  {
   var files = fs.readFileSync('levels/'+ window.levelDirs[index] +'/dir.txt', "ascii").split("\r\n");  
   console.log(files)
 
-  // var groupLevels = ui.createRectangle(0, 0, ui.width, ui.height, window.bgColor);  groupLevels.isMov = true;
-  var groupLevels = ui.createGroup(0, 0, ui.width, ui.height);  groupLevels.isMov = true;
-  arrLevelsInADir[index] = groupLevels;
+  var groupRectLevels = ui.createRectangle(0, 0, ui.width, ui.height, window.bgColor);  
+  arrLevelsInADir[index] = groupRectLevels;
+  var groupLevels = ui.createGroup(0, 0, ui.width, ui.height);  groupLevels.isMov = true;  groupLevels.isMov = true;
+  groupLevels.parent = groupRectLevels
 
-  var retSprite = ui.createSprite('images/return.png', 0, 0, 50,50);  retSprite.setParent(groupLevels);
+  var retSprite = ui.createSprite('images/return.png', 0, 0, 50,50);  retSprite.setParent(groupRectLevels);
   retSprite.onClick(function(){
     this.parent.visible = false
-    groupDirs.visible = true;  groupStart.visible = true;
+    groupDirs.visible = true;  
+    // groupStart.visible = true;
   })
 
   var textDirName = ui.createText(window.levelDirs[index], 24, family, 'white', 70, 5); textDirName.setParent(groupLevels);
@@ -323,6 +322,14 @@ function setTextButtomGroup(text, group){
   text.anchor.y = ThreeUI.anchors.bottom;
   
   text.setParent( group);  
+}
+
+function shareApp() {
+  console.log('fenxiang!');
+  // wx.showShareMenu({withShareTicket:true})
+  wx.shareAppMessage({
+    title: '小白逃生'
+  })
 }
 
 window.setUiDirFile = function(text){

@@ -35,7 +35,7 @@ var bgPlane = null;
 var rooms = [];
 var groups = [];
 var roomEdges = null;
-var outDoor , torus;
+var outDoor , torus = [];
 var fallTweens = [];
 var arrMovStepRec = [];
 var msheOpas = [];
@@ -60,9 +60,11 @@ var groupCubeShowLen = cubeShowLen + 2;
 
 var colorGroupLady = 0xffffff;
 var colorGroup = 0x00f000;
-var movSound = new Audio('audio/collision.mp3');
-var winSound = new Audio('audio/level_complete.wav');
 var fallSound = new Audio('audio/bullet.mp3');
+var colNoMovSound = new Audio('audio/colnomov.mp3');
+var colSound = new Audio('audio/ding.mp3');
+// var colSound = fallSound;
+var winSound = new Audio('audio/level_complete.wav');
 // var groundSound = new Audio('audio/fall_2.mp3');
 // groundSound.loop = true
 // groundSound.play()
@@ -131,7 +133,7 @@ function main(){
 var groupMaterial;
 var uniforms1 = {time: { value: 1.0 }};
 var clock = new THREE.Clock();
-// function initMat() {
+function initMat() {
   var fragment_shader4 = '\
   uniform float time;\
   varying vec2 vUv;\
@@ -214,7 +216,7 @@ var clock = new THREE.Clock();
     vertexShader: vertexShader,
     fragmentShader: fragment_shader4
   } );    
-// }
+}
 
 var matShaderRgb = new THREE.ShaderMaterial( {
   uniforms: {},
@@ -373,8 +375,11 @@ function removeCubes(){
   roomEdges = null;
 
   TWEEN.removeAll();
-  outDoor.remove(torus); 
-  torus = null;
+  torus.forEach(function(item){ 
+    outDoor.remove(item); 
+    item = null;
+  })
+  torus = []
   scene.remove(outDoor);  
   outDoor = null;  
   
@@ -426,8 +431,14 @@ function initCubes(funcPlayBack) {
   scene.add(roomEdges);
   //room
   var materials = [];
-  for ( var i = 0; i < 12; i ++ ) {
-    materials.push( new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, side: THREE.BackSide } ) );
+  var startH = Math.floor(Math.random()*360);
+  for ( var i = 0; i < 6; i ++ ) {
+    // { color: /*0x585858*/Math.random() * 0xffffff, 
+    materials.push(new THREE.MeshBasicMaterial({
+      // color: 'rgb('+Math.floor(Math.random()*64)+','+Math.floor(Math.random()*64)+','+Math.floor(Math.random()*64)+')',
+      color: 'hsla('+ startH+i*60 +',50%,50%)' ,
+      side: THREE.BackSide
+    }));
   }
   var geometry = new THREE.BoxBufferGeometry( cubeCntX * cubeLen, cubeCntY * cubeLen, cubeCntZ * cubeLen );
   var mesh = new THREE.Mesh( geometry, materials );
@@ -539,7 +550,7 @@ function initTut_0() {
 
 function initTut_1() {
   controls.enabled = false;
-  var rotL = {ms:1500, degree:0.05};
+  var rotL = {ms:500, degree:0.05};
   var tLeft = new TWEEN.Tween( rotL ).to({}, rotL.ms).onUpdate(function(target){
     controls.rotateLeft(target.degree);
     controls.update();
@@ -609,11 +620,11 @@ Group.prototype.moveGroup = function (movVec, selectMeshInitPos) {
       }
       else{
         if (rooms[index] === undefined){
-            shakeGroup(this);
+            shakeGroup(this, i);
         }
         else {
             var temp = getGroupFromPos(workVec3);
-            shakeGroup(temp);
+            shakeGroup(temp, i);
         }
         break;
       }
@@ -701,7 +712,7 @@ function formOneGroup(s, e, lady) {
     group.lady = true;
     // group.material.color.setHex(colorGroupLady);
     group.material = new THREE.MeshBasicMaterial({ color:colorGroupLady });
-    group.edges.material.color.setHex(0x1000000 - colorGroupLady);
+    group.edges.material.color.setHex(0x888888)//0x1000000 - colorGroupLady);
 
     var outPos = new THREE.Vector3();
     getOutPosition(s, e, outPos);
@@ -712,17 +723,28 @@ function formOneGroup(s, e, lady) {
     scene.add(outDoor);    
 
     var geometry = new THREE.TorusBufferGeometry( 80, 4, 4, 4 );
-    var material = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-    torus = new THREE.Mesh( geometry, material );    
-    torus.rotation.set(Math.PI / 2, 0, Math.PI / 4);
-    torus.position.y = -50;
-    outDoor.add( torus );
-    var v2 = new THREE.Vector3(1.5,1.5,1.5)
-    var outDoorTween = new TWEEN.Tween( torus.scale ).to(v2, 10000).repeat(0x5000).start();
-  }
-  setRoomsOccupied(s, e, true);
-}
+    var material = new THREE.MeshBasicMaterial( { color: 0xffffff , transparent:true} );
+    var time = 10000
+      for (var i = 0; i < 2; ++i){
+      torus.push(new THREE.Mesh( geometry, material ));  
+      torus[i].rotation.set(Math.PI / 2, 0, Math.PI / 4);
+      torus[i].position.y = -50;
+      // torus[i].visible = false;
+      outDoor.add( torus[i] );
+      var v2 = new THREE.Vector3(1.5,1.5,1.5)
 
+      new TWEEN.Tween( torus[i].scale ).to(v2, time).delay(i*time/2).repeat(1000).start()
+                  // .onStart( function () {
+                  //     this.visible = true;
+                  // }.bind(torus[i]));
+      new TWEEN.Tween(torus[i].material).to({opacity: 0}, time).delay(i*time/2).repeat(1000).start()
+      //         .onComplete( function () {
+      //           this.visible = false;
+      // }.bind(torus[i]));
+    }
+    setRoomsOccupied(s, e, true);
+  }
+}
 function getOutPosition(s, e, outPos){
   var size = new THREE.Vector3();
   size.copy(rooms[e]).sub(rooms[s]).multiplyScalar(cubeLen);
@@ -829,12 +851,15 @@ function getGroupFromPos(pos){
   return null;
 }
 
-function shakeGroup(shakeedGroup){
+function shakeGroup(shakeedGroup, step){
   if (shakeedGroup === null)
       console.log('error')
-
-  movSound.currentTime = 0;   movSound.play();
-
+  if (step == 1){
+    colNoMovSound.currentTime = 0;   colNoMovSound.play();
+  }
+  else{
+    colSound.currentTime = 0;   colSound.play();
+  }
   // shakeedGroup.material.color.setHex(0xff0000);
   var t1 = new TWEEN.Tween(shakeedGroup.scale).to(new THREE.Vector3(0.9,0.9,0.9), 100)
   var t2 = new TWEEN.Tween(shakeedGroup.scale).to(new THREE.Vector3(1,1,1), 100)
