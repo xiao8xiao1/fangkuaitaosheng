@@ -432,11 +432,11 @@ function initCubes(funcPlayBack) {
   //room
   var materials = [];
   var startH = Math.floor(Math.random()*360);
-  for ( var i = 0; i < 6; i ++ ) {
+  for ( var i = 0; i < 12; i ++ ) {
     // { color: /*0x585858*/Math.random() * 0xffffff, 
     materials.push(new THREE.MeshBasicMaterial({
       // color: 'rgb('+Math.floor(Math.random()*64)+','+Math.floor(Math.random()*64)+','+Math.floor(Math.random()*64)+')',
-      color: 'hsla('+ startH+i*60 +',50%,50%)' ,
+      color: 'hsla('+ startH+i*30 +',50%,50%)' ,
       side: THREE.BackSide
     }));
   }

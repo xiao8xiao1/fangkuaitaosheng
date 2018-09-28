@@ -102,6 +102,7 @@ var PlaceUi = function (paraUi) {
   }
   //Dirs
   {
+    
     groupDirs = ui.createGroup(0, 0, ui.width, ui.height);  groupDirs.visible = false;  groupDirs.isMov = true;
     var retSprite = ui.createSprite('images/return.png', 0, 0, 50,50);
     retSprite.setParent(groupDirs)
@@ -284,7 +285,7 @@ function createLevelsInADir(index)  {
      var textTemp = ui.createText(name[0], 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectLevel);
      rectLevel.dirIndex = index;  rectLevel.fileIndex = i;
      rectLevel.onClick(function() {
-        this.parent.visible = false;
+        this.parent.parent.visible = false;
         groupPlaying.visible = true;
         ui.dispatchEvent( { type: 'selectDirFile' , dirIndex: this.dirIndex, fileIndex: this.fileIndex} )
      })     
