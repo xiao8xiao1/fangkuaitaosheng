@@ -238,6 +238,7 @@ var PlaceUi = function (paraUi) {
     let geometry = new THREE.PlaneGeometry(ui.width*ratio, ui.height*ratio)
     let material = new THREE.MeshBasicMaterial({ map: rankingTexture, transparent: true , opacity:0.8}) //
     ranking = new THREE.Mesh(geometry, material)
+    ranking.visible = false;
     ui.scene.add(ranking)
 
     rankingRetSprite = ui.createSprite('images/return.png', 50, 608, 50,50);  rankingRetSprite.visible = false;
@@ -248,7 +249,7 @@ var PlaceUi = function (paraUi) {
       openDataContext.postMessage({type: 'stopShow'})
       wx.offTouchMove(updateRanking);
       wx.offTouchEnd(updateRanking);
-    });    
+    });
   }
 }
 
