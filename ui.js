@@ -8,6 +8,9 @@ const ratio = wx.getSystemInfoSync().pixelRatio;
 sharedCanvas.width = window.innerWidth * ratio;
 sharedCanvas.height = window.innerHeight * ratio;
 
+let uiWidth = 414
+let uiHeight= 736
+
 var family = 'Helvetica';//wx.loadFont('images/num.ttf');
 var groupStart, groupPlaying,  rankingTexture, ranking, rankingRetSprite, groupDirs, textDirFile, groupPassLevel, groupTut, groupTut_01;
 
@@ -31,8 +34,8 @@ var PlaceUi = function (paraUi) {
   //start
   {
   // var colorIndex = 7;
-  groupStart = ui.createGroup(0, 0, ui.width, ui.height); 
-    var bg = ui.createRectangle(0, 0, ui.width, ui.height, window.bgColor); 
+  groupStart = ui.createGroup(0, 0, uiWidth, uiHeight); 
+    var bg = ui.createRectangle(0, 0, uiWidth, uiHeight, window.bgColor); 
     var gameName = ui.createText('脑力操: 3D快乐方块', 40, family, 'black', 25, 154);
     gameName.textBaseline = 'top';  gameName.fontWeight = 'bold';
 
@@ -103,7 +106,7 @@ var PlaceUi = function (paraUi) {
   //Dirs
   {
     
-    groupDirs = ui.createGroup(0, 0, ui.width, ui.height);  groupDirs.visible = false;  groupDirs.isMov = true;
+    groupDirs = ui.createGroup(0, 0, uiWidth, uiHeight);  groupDirs.visible = false;  groupDirs.isMov = true;
     var retSprite = ui.createSprite('images/return.png', 0, 0, 50,50);
     retSprite.setParent(groupDirs)
     retSprite.onClick(() => {
@@ -136,7 +139,7 @@ var PlaceUi = function (paraUi) {
 
   //playing
   {
-    this.groupPlaying = groupPlaying = ui.createGroup(0, 0, ui.width, ui.height);  groupPlaying.visible = false;
+    this.groupPlaying = groupPlaying = ui.createGroup(0, 0, uiWidth, uiHeight);  groupPlaying.visible = false;
     
       var rectReturn = ui.createSprite('images/levels.png', -5, -5, 60,60);
       rectReturn.onClick(function(){
@@ -156,7 +159,7 @@ var PlaceUi = function (paraUi) {
 
   //过关
   {
-  groupPassLevel = ui.createGroup(0, 0, ui.width, ui.height);  groupPassLevel.visible = false;
+  groupPassLevel = ui.createGroup(0, 0, uiWidth, uiHeight);  groupPassLevel.visible = false;
 
     var rectTemp = ui.createRectangle( 0, 55, 414, 254, '#99FF00');  rectTemp.parent = groupPassLevel;
     var star1 = ui.createSprite('images/star-on.png',100, 60, 50, 50);  star1.parent = groupPassLevel; 
@@ -200,7 +203,7 @@ var PlaceUi = function (paraUi) {
 
   //教程0
   {
-    this.groupTut = groupTut = ui.createGroup(0, 0, ui.width, ui.height);  groupTut.visible = false;  
+    this.groupTut = groupTut = ui.createGroup(0, 0, uiWidth, uiHeight);  groupTut.visible = false;  
       var rectTut1 = ui.createRectangle( 110, 70, 160, 80, '#43575F');  rectTut1.parent = groupTut;
       var textTut1 = ui.createText('移开小色块\n\n救出小白块', 20, family, 'white', 0, 0);  
       setTextTopRect(textTut1, rectTut1);
@@ -220,7 +223,7 @@ var PlaceUi = function (paraUi) {
   }
   //教程1
   {
-    this.groupTut_01 = groupTut_01 = ui.createGroup(0, 0, ui.width, ui.height);  groupTut_01.visible = false;
+    this.groupTut_01 = groupTut_01 = ui.createGroup(0, 0, uiWidth, uiHeight);  groupTut_01.visible = false;
     // groupTut_01.parent = groupPlaying
       var rectTut1 = ui.createRectangle( 130, 530, 152, 67, '#43575F');  rectTut1.parent = groupTut_01;
       var textTut1 = ui.createText('按住空白处拖动\n旋转小屋', 20, family, 'white', 0, 0);
@@ -235,7 +238,7 @@ var PlaceUi = function (paraUi) {
     rankingTexture = new THREE.CanvasTexture(sharedCanvas)
     rankingTexture.minFilter = rankingTexture.magFilter = THREE.LinearFilter
     rankingTexture.needsUpdate = true
-    let geometry = new THREE.PlaneGeometry(ui.width*ratio, ui.height*ratio)
+    let geometry = new THREE.PlaneGeometry(uiWidth*ratio, uiHeight*ratio)
     let material = new THREE.MeshBasicMaterial({ map: rankingTexture, transparent: true , opacity:0.8}) //
     ranking = new THREE.Mesh(geometry, material)
     ranking.visible = false;
@@ -261,9 +264,9 @@ function createLevelsInADir(index)  {
   var files = fs.readFileSync('levels/'+ window.levelDirs[index] +'/dir.txt', "ascii").split("\r\n");  
   console.log(files)
 
-  var groupRectLevels = ui.createRectangle(0, 0, ui.width, ui.height, window.bgColor);  
+  var groupRectLevels = ui.createRectangle(0, 0, uiWidth, uiHeight, window.bgColor);  
   arrLevelsInADir[index] = groupRectLevels;
-  var groupLevels = ui.createGroup(0, 0, ui.width, ui.height);  groupLevels.isMov = true;  groupLevels.isMov = true;
+  var groupLevels = ui.createGroup(0, 0, uiWidth, uiHeight);  groupLevels.isMov = true;  groupLevels.isMov = true;
   groupLevels.parent = groupRectLevels
 
   var retSprite = ui.createSprite('images/return.png', 0, 0, 50,50);  retSprite.setParent(groupRectLevels);

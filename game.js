@@ -60,7 +60,9 @@ var groupCubeShowLen = cubeShowLen + 2;
 
 var colorGroupLady = 0xffffff;
 var colorGroup = 0x00f000;
-var fallSound = new Audio('audio/bullet.mp3');
+// var fallSound = new Audio('audio/bullet.mp3');
+var fallSound = wx.createInnerAudioContext();  fallSound.src = 'audio/bullet.mp3';
+
 var colNoMovSound = new Audio('audio/colnomov.mp3');
 var colSound = new Audio('audio/ding.mp3');
 // var colSound = fallSound;
@@ -432,11 +434,10 @@ function initCubes(funcPlayBack) {
   //room
   var materials = [];
   var startH = Math.floor(Math.random()*360);
-  for ( var i = 0; i < 12; i ++ ) {
-    // { color: /*0x585858*/Math.random() * 0xffffff, 
+  for ( var i = 0; i < 6; i ++ ) {
+    startH += 60
     materials.push(new THREE.MeshBasicMaterial({
-      // color: 'rgb('+Math.floor(Math.random()*64)+','+Math.floor(Math.random()*64)+','+Math.floor(Math.random()*64)+')',
-      color: 'hsla('+ startH+i*30 +',50%,50%)' ,
+      color: 'hsla('+ startH +',50%,50%)' ,
       side: THREE.BackSide
     }));
   }
@@ -463,13 +464,16 @@ function initCubes(funcPlayBack) {
 
   fallTweens = [];
   for (var i = 0; i < groups.length; ++i)
-    fallTweens.push(new TWEEN.Tween( groups[i].position ).to( groups[i].posTo, 300 ).
+    fallTweens.push(
+      new TWEEN.Tween( groups[i].position ).to( groups[i].posTo, 200 ).delay(1000+i*250).
       onComplete(function() {
-        fallSound.currentTime = 0;  fallSound.play();
-      }));
+        fallSound.stop();
+        fallSound.play();
+      }).start()
+    );
 
-  for (var i = 0; i < fallTweens.length-1; ++i)
-    fallTweens[i].chain(fallTweens[i+1]);
+  // for (var i = 0; i < fallTweens.length-1; ++i)
+  //   fallTweens[i].chain(fallTweens[i+1]);
 
   if (funcPlayBack)
     fallTweens[fallTweens.length-1].onComplete(function(){
@@ -484,9 +488,7 @@ function initCubes(funcPlayBack) {
     })    
   }
     
-  fallTweens[0].delay(1000).start();
-
-
+  // fallTweens[0].delay(1000).start();
 }
 
 function initTut_0() {

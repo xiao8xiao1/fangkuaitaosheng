@@ -324,7 +324,7 @@ DisplayObject.prototype.setParent = function(paraParent) {
 		if (pUp.isMov === true){
 			this.isMov = true;
 			var bounds = this.getBounds();
-			if (bounds.y + bounds.height > this.ui.newHeight){
+			if (bounds.y + bounds.height > this.ui.newHeightIphone6P){
 				this.ui.setPlaneMovHeight(bounds.y + bounds.height)
 			}
 			return;

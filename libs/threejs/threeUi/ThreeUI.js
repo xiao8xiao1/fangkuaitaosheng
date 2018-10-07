@@ -121,7 +121,7 @@ ThreeUI.prototype.draw = function() {
 		this.context.clearRect(this.clearRect.x, this.clearRect.y, this.clearRect.width, this.clearRect.height);
 	} else {
 		this.context.clearRect(0, 0, 414, 736);
-		this.contextMov.clearRect(0, 0, 414, this.newHeight);
+		this.contextMov.clearRect(0, 0, 414, this.newHeightIphone6P);
 	}
 	var self = this;
 	var length = this.displayObjects.length;
@@ -320,11 +320,14 @@ ThreeUI.prototype.clickHandler = function(event) {
 
 	if (this.listeningToTouchEvents && event instanceof MouseEvent || coords === null) return;
 
-	coords = this.windowToUISpace(coords.x, coords.y);
+	// coords = this.windowToUISpace(coords.x, coords.y);
     if (this.planeMov){
         var coordsMov = {x:coords.x,
-            y: coords.y + this.planeMov.position.y/DPR + (this.planeMov.geometry.parameters.height/DPR - this.height)/2 };
-    }
+			y: coords.y + this.planeMov.position.y/DPR + (this.heightMovCanvas/DPR - this.height)/2 };
+		coordsMov = this.uiToIphone6p(coordsMov.x, coordsMov.y);
+	}
+	coords = this.uiToIphone6p(coords.x, coords.y);
+
 	var callbackQueue = [], callbackQueueMov = [];
 	this.eventListeners.click.forEach(function(listener) {
 		var displayObject = listener.displayObject;
@@ -364,6 +367,13 @@ ThreeUI.prototype.windowToUISpace = function(x, y) {
 	return {
 		x: (x - bounds.left) * scale,
 		y: (y - bounds.top) * scale,
+	};
+}
+
+ThreeUI.prototype.uiToIphone6p = function(x, y) {
+	return {
+		x: x/this.width * 414,
+		y: y/this.height * 736,
 	};
 }
 
@@ -415,24 +425,25 @@ ThreeUI.prototype.addPlaneMov = function() {
 }
 ThreeUI.prototype.setPlaneMovHeight = function(newHeight) {
 	this.scene.remove(this.planeMov)
-	this.newHeight = newHeight;
+	this.newHeightIphone6P = newHeight;
+	this.heightMovCanvas = newHeight/736*this.height * DPR;
 	var canvas = document.createElement('canvas');
 	canvas.width = this.width * DPR;
-	canvas.height = newHeight * DPR;
+	canvas.height = this.heightMovCanvas;
 	this.contextMov = canvas.getContext('2d');
-	// this.contextMov.scale(DPR, DPR)
 	this.contextMov.scale(DPR*this.width/414, DPR*this.height/736)
-	console.log(this.contextMov)
+	console.log('setPlaneMovHeight')
+	console.log(this.newHeightIphone6P, this.heightMovCanvas)
+	console.log(this.newHeightIphone6P/this.heightMovCanvas, 736/(this.height*DPR))
 
 	this.textureMov = new THREE.Texture(canvas);
 	var material = new THREE.MeshBasicMaterial({ map: this.textureMov , transparent : true});
 	material.map.minFilter = THREE.LinearFilter;
 
 	var planeGeo = new THREE.PlaneGeometry(canvas.width, canvas.height);
-	console.log('planeMov', this.newHeight)
 	this.planeMov = new THREE.Mesh(planeGeo, material);	
 	this.planeMov.matrixAutoUpdate = false;
-	this.planeMov.translateY(-0.5*(newHeight - this.height)*DPR)
+	this.planeMov.translateY(-0.5*(canvas.height - this.height*DPR))
 	this.planeMov.translateZ(1)
 	this.planeMov.updateMatrix()
 	this.scene.add(this.planeMov);
@@ -482,7 +493,10 @@ function onMove(e) {
 		eClientY = e.pageY;
 	}
     moveY = clickStartY - eClientY;
-    moveY *= DPR
+	// console.log('moveY', moveY)	
+	// if (moveY < 5 && moveY > -5)
+	// 	return;
+	moveY *= DPR
     scope.planeMov.position.y = startPosY + moveY;    scope.planeMov.updateMatrix()
 	// console.log(scope.planeMov.position)
 	scope.hasMoved = true;
@@ -498,7 +512,7 @@ function onUp(e) {
 		eClientY = e.pageY;
 	}	
     moveY = clickStartY - eClientY;
-    var maxY = (scope.newHeight - scope.height)*DPR/2
+    var maxY = (scope.heightMovCanvas - scope.height*DPR)/2
 	var minY = -maxY
 
 	if (scope.planeMov.position.y < minY) {
