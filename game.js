@@ -35,7 +35,7 @@ var bgPlane = null;
 var rooms = [];
 var groups = [];
 var roomEdges = null;
-var outDoor , torus = [];
+var outDoor , movDoors = [];
 var fallTweens = [];
 var arrMovStepRec = [];
 var msheOpas = [];
@@ -126,8 +126,6 @@ function main(){
     arrMovStepRec = [];
     initCubes();
   });  
-
-
   
   animate();
 }
@@ -377,11 +375,11 @@ function removeCubes(){
   roomEdges = null;
 
   TWEEN.removeAll();
-  torus.forEach(function(item){ 
-    outDoor.remove(item); 
+  movDoors.forEach(function(item){ 
+    scene.remove(item); 
     item = null;
   })
-  torus = []
+  movDoors = []
   scene.remove(outDoor);  
   outDoor = null;  
   
@@ -654,7 +652,7 @@ Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
     nowEndVec3.add(movedSteps);
     if (this.lady === true && nowEndVec3.z >= cubeCntZ) {
       winSound.play();
-      window.showPassLevel();
+      window.showPassLevel(1);
     }
     else {
       setRoomsOccupied(this.start, this.end, false);
@@ -717,35 +715,34 @@ function formOneGroup(s, e, lady) {
     group.edges.material.color.setHex(0x888888)//0x1000000 - colorGroupLady);
 
     var outPos = new THREE.Vector3();
-    getOutPosition(s, e, outPos);
+    getOutPosition(s, e, outPos); 
     // var outDoor = new THREE.Mesh(new THREE.BoxGeometry(cubeLen, cubeLen, cubeLen), 
     //                               new THREE.MeshBasicMaterial({ color: 0xffffff, opacity : 1 }));  
-    outDoor = new THREE.Mesh( new THREE.CylinderBufferGeometry( 0, 10, 100, 12 ), new THREE.MeshNormalMaterial());
-    outDoor.rotateX( Math.PI / 2 );    outDoor.position.copy(outPos);
-    scene.add(outDoor);    
+    outDoor = new THREE.Mesh( new THREE.CylinderBufferGeometry( 2, 10, 50, 12 ), new THREE.MeshNormalMaterial());
+    outDoor.rotateX( Math.PI / 2 );    outDoor.position.copy(outPos);  outDoor.position.z -= 20
+    scene.add(outDoor);
+    var tmpPos = new THREE.Vector3().copy(outDoor.position);  tmpPos.z += 80
+    var time = 4000
+    new TWEEN.Tween( outDoor.position ).to(tmpPos, time).repeat(1000).start()
 
-    var geometry = new THREE.TorusBufferGeometry( 80, 4, 4, 4 );
-    var material = new THREE.MeshBasicMaterial( { color: 0xffffff , transparent:true} );
-    var time = 10000
-      for (var i = 0; i < 2; ++i){
-      torus.push(new THREE.Mesh( geometry, material ));  
-      torus[i].rotation.set(Math.PI / 2, 0, Math.PI / 4);
-      torus[i].position.y = -50;
-      // torus[i].visible = false;
-      outDoor.add( torus[i] );
-      var v2 = new THREE.Vector3(1.5,1.5,1.5)
+    for (var i = 0; i < 2; ++i){
+      movDoors.push(new THREE.Mesh( new THREE.TorusBufferGeometry( 60, 4, 4, 4 ), 
+                    new THREE.MeshBasicMaterial({ color: 0xffffff , transparent:true, opacity: 0.8}) ));  
+      movDoors[i].position.copy(outPos); movDoors[i].position.z -= 50
+      movDoors[i].rotation.set(0, 0, Math.PI / 4);
 
-      new TWEEN.Tween( torus[i].scale ).to(v2, time).delay(i*time/2).repeat(1000).start()
-                  // .onStart( function () {
-                  //     this.visible = true;
-                  // }.bind(torus[i]));
-      new TWEEN.Tween(torus[i].material).to({opacity: 0}, time).delay(i*time/2).repeat(1000).start()
-      //         .onComplete( function () {
-      //           this.visible = false;
-      // }.bind(torus[i]));
+      scene.add( movDoors[i] );
+      var t0 = new TWEEN.Tween( movDoors[i].scale ).to(new THREE.Vector3(1.5,1.5,1.5), time).repeat(1000)
+      var t1 = new TWEEN.Tween(movDoors[i].material).to({opacity: 0}, time).repeat(1000)
+      if (i == 0){
+        t0.start();  t1.start();
+      }
+      else{
+        setTimeout(function(){t0.start();  t1.start();}, time/2);
+      }
     }
-    setRoomsOccupied(s, e, true);
   }
+  setRoomsOccupied(s, e, true);
 }
 function getOutPosition(s, e, outPos){
   var size = new THREE.Vector3();
@@ -903,7 +900,7 @@ function playBack(){
 
   movTweens[movTweens.length-1].onComplete(function(){
     winSound.play();
-    window.showPassLevel();
+    window.showPassLevel(0);
   })
       
   movTweens[0].delay(1000).start()

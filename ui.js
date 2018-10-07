@@ -150,32 +150,25 @@ var PlaceUi = function (paraUi) {
         groupDirs.visible = true;
       });  
 
-    textDirFile = ui.createText('', 24, family, 'black', 70, 5);
+    textDirFile = ui.createText('', 20, family, 'black', 60, 25);
     var temp = ui.createSprite('images/fenxiang.png',20, 660, 50, 50);
     temp.onClick(shareApp);
 
     rectReturn.parent= textDirFile.parent = temp.parent= groupPlaying;
   }
 
-  //过关
+  //passLevel
   {
+    
   groupPassLevel = ui.createGroup(0, 0, uiWidth, uiHeight);  groupPassLevel.visible = false;
 
-    var rectTemp = ui.createRectangle( 0, 55, 414, 254, '#99FF00');  rectTemp.parent = groupPassLevel;
-    var star1 = ui.createSprite('images/star-on.png',100, 60, 50, 50);  star1.parent = groupPassLevel; 
-    var star2 = ui.createSprite('images/star-on.png',150, 60, 50, 50);  star2.parent = groupPassLevel; 
-    var star3 = ui.createSprite('images/star-on.png',200, 60, 50, 50);  star3.parent = groupPassLevel; 
-    var star4 = ui.createSprite('images/star-on.png',250, 60, 50, 50);  star4.parent = groupPassLevel; 
-
-    var textTemp = ui.createText('太棒了', 40, family, 'black', 143, 124);  textTemp.fontWeight = 'bold';  textTemp.parent = groupPassLevel;
-    var textTemp = ui.createText('超越了 0 位好友', 32, family, 'red', 87, 193);  textTemp.parent = groupPassLevel;
-    var textTemp = ui.createText('步数: ', 18, family, 'black', 10, 268);  textTemp.parent = groupPassLevel;
-    var textTemp = ui.createText('用时: ', 18, family, 'black', 297, 268);  textTemp.parent = groupPassLevel;
-
+    // var rectTemp = ui.createRectangle( 0, 45, uiWidth, 50, '#99FF00');  rectTemp.parent = groupPassLevel;
+    // var textTemp = ui.createText('太棒了', 40, family, 'black', 143, 0);  textTemp.fontWeight = 'bold';  textTemp.parent = rectTemp;
     var rectThisAgain = ui.createRectangle(31, 390, 142, 57, 'white');  rectThisAgain.parent = groupPassLevel;
       var textTemp = ui.createText('再来一次', 32, family, 'black', 0, 0);  setTextInRect(textTemp, rectThisAgain);
     rectThisAgain.onClick(function() {
       groupPlaying.visible = true;
+      ranking.visible = false
       groupPassLevel.visible = false;
       groupStart.visible = false;
       ui.dispatchEvent( { type: 'thisAgain' } )
@@ -185,6 +178,7 @@ var PlaceUi = function (paraUi) {
       var textTemp = ui.createText('精彩回放', 32, family, 'black', 0, 0);  setTextInRect(textTemp, rectPlayBack);
     rectPlayBack.onClick(function() {
       groupPlaying.visible = true;
+      ranking.visible = false
       groupPassLevel.visible = false;
       groupStart.visible = false;
       ui.dispatchEvent( { type: 'playBack' } )
@@ -195,6 +189,7 @@ var PlaceUi = function (paraUi) {
       var temp = ui.createSprite('images/scroll_r.png',10, 5, 50, 50);  temp.parent = rectNext; 
       rectNext.onClick(function() {
       groupPlaying.visible = true;
+      ranking.visible = false
       groupPassLevel.visible = false;
       groupStart.visible = false;
       ui.dispatchEvent( { type: 'next' } )
@@ -239,8 +234,10 @@ var PlaceUi = function (paraUi) {
     rankingTexture.minFilter = rankingTexture.magFilter = THREE.LinearFilter
     rankingTexture.needsUpdate = true
     let geometry = new THREE.PlaneGeometry(uiWidth*ratio, uiHeight*ratio)
-    let material = new THREE.MeshBasicMaterial({ map: rankingTexture, transparent: true , opacity:0.8}) //
+    let material = new THREE.MeshBasicMaterial({ map: rankingTexture, transparent: true , opacity:0.8}) 
     ranking = new THREE.Mesh(geometry, material)
+    ranking.translateZ(-1)
+    // ranking.translateY(100)
     ranking.visible = false;
     ui.scene.add(ranking)
 
@@ -276,7 +273,7 @@ function createLevelsInADir(index)  {
     // groupStart.visible = true;
   })
 
-  var textDirName = ui.createText(window.levelDirs[index], 24, family, 'white', 70, 5); textDirName.setParent(groupLevels);
+  var textDirName = ui.createText(window.levelDirs[index], 24, family, 'white', 70, 20); textDirName.setParent(groupLevels);
   var row = 0, col = 0, cntArow = 4, startX = 30, startY = 60, w = 60, h = 40, padX = 30, padY = 20;
   for (var i = 0; i < files.length; ++i){
      if (files[i] === '') continue;
@@ -341,12 +338,25 @@ window.setUiDirFile = function(text){
   textDirFile.text = text
 }
 
-window.showPassLevel = function(){
+window.showPassLevel = function(score){
+  openDataContext.postMessage({type: 'aboutMe', score: score})
+  updateRanking()
+  var count_uiRedraw = 0;
+  var flag_uiRedraw = setInterval(function(max) {
+          if (count_uiRedraw >= max) {
+              clearInterval(flag_uiRedraw);
+              return;
+          }
+          updateRanking()
+          count_uiRedraw = count_uiRedraw + 1;
+      }, 1000, 3);
+  
   groupTut.visible = false;
   groupTut_01.visible = false;
   groupPlaying.visible = false;
+  ranking.visible = true;
   groupPassLevel.visible = true;
-  groupStart.visible = true;
+  // groupStart.visible = true;
 }
 
 module.exports = PlaceUi;

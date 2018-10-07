@@ -172,7 +172,7 @@ function sortByScore (data) {
             avatarUrl: item.avatarUrl,
             nickname: item.nickname,
             openid: item.openid,
-            score: item['KVDataList'][1] && item['KVDataList'][1].value!='undefined' ? item['KVDataList'][1].value : (item['KVDataList'][0]?item['KVDataList'][0].value:0) // 取最高分
+            score: item['KVDataList'][0] && item['KVDataList'][0].value!='undefined' ? item['KVDataList'][0].value : 0 // 取最高分
         })
 
     })
@@ -203,29 +203,22 @@ function getUserInfo() {
 }
 
 // 获取自己的分数
-function getMyScore () {
+function getAndSetMyScore (score) {
     wx.getUserCloudStorage({
-        keyList: ['score', 'maxScore'],
+        keyList: ['score'],
         success: res => {
             let data = res
             console.log(data)
-            let lastScore = data.KVDataList[0].value || 0
-            if (!data.KVDataList[1]){
-                saveMaxScore(lastScore)
-                myScore = lastScore
-            } else if (lastScore > data.KVDataList[1].value) {
-                saveMaxScore(lastScore)
-                myScore = lastScore
-            } else {
-                myScore = data.KVDataList[1].value
-            }
+            let myScore = parseInt(data.KVDataList[0].value) || 0
+            myScore += parseInt(score)
+            saveMyScore(myScore)
         }
     })
 }
 
-function saveMaxScore(maxScore) {
+function saveMyScore(myScore) {
     wx.setUserCloudStorage({
-        KVDataList: [{ 'key': 'maxScore', 'value': (''+maxScore) }],
+        KVDataList: [{ 'key': 'score', 'value': (''+myScore) }],
         success: res => {
             console.log(res)
         },
@@ -235,18 +228,38 @@ function saveMaxScore(maxScore) {
     })
 }
 
-function getFriendsRanking () {
+function getAndDrawFriendsRanking () {
   wx.getFriendCloudStorage({
     keyList: ['score', 'maxScore'],
     success: res => {
         let data = res.data
         console.log(res.data)
-        // drawRankList(data)
         initRanklist(sortByScore(data))
         drawMyRank()
-    }
+    },
+    fail: res => {
+        console.log('getFriendsRanking:fail')
+        console.log(res.data)
+    }    
   })
 }
+
+function getAndDrawMe () {
+  wx.getFriendCloudStorage({
+    keyList: ['score'],
+    success: res => {
+        let data = res.data
+        console.log(res.data)
+        var sortedData = sortByScore(data)
+        initRanklist(sortedData, (myRank-2)*itemHeight)
+    },
+    fail: res => {
+        console.log('getFriendsRanking:fail')
+        console.log(res.data)
+    }    
+  })
+}
+  
 
 function getGroupRanking (ticket) {
     wx.getGroupCloudStorage({
@@ -270,7 +283,6 @@ wx.onMessage(data => {
     if (data.type === 'friends') {
         // getFriendsRanking()
         // getMyScore()
-
         
         initFrame()
         fakeData(20)
@@ -281,6 +293,10 @@ wx.onMessage(data => {
 
         // show = true
         console.log('on')    
+    } else if(data.type === 'aboutMe'){
+        console.log('aboutMe')
+        getAndSetMyScore(data.score)
+        getAndDrawMe()
     } else if (data.type === 'group') {
         getGroupRanking(data.text)
         getMyScore()
