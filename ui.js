@@ -240,7 +240,6 @@ var PlaceUi = function (paraUi) {
     // ranking.translateY(100)
     ranking.visible = false;
     ui.scene.add(ranking)
-    console.log('rankingPlane',ranking.position)
 
     rankingRetSprite = ui.createSprite('images/return.png', 50, 608, 50,50);  rankingRetSprite.visible = false;
     rankingRetSprite.onClick(() => {

@@ -62,10 +62,9 @@ var ThreeUI = function(gameCanvas, height) {
 		this.width* DPR / 2,
 		this.height* DPR / 2,
 		-this.height* DPR / 2,
-		1, 5
+		0, 30
 	);
-	this.camera.position.z = 2;
-	this.camera.lookAt(0,0,0)
+	this.camera.position.z = 10;
 	this.scene = new THREE.Scene();	
 	this.movobjCnt = 0;
 	this.hasMoved = false;
@@ -74,8 +73,7 @@ var ThreeUI = function(gameCanvas, height) {
 	this.prepareThreeJSScene();
 	// Event listening
     // canvas.addEventListener('touchstart', this.clickHandler.bind(this));
-	canvas.addEventListener('touchend', this.clickHandler.bind(this));
-	console.log('uiCam', this.camera.position)
+    canvas.addEventListener('touchend', this.clickHandler.bind(this));
 };
 
 /**
@@ -107,11 +105,10 @@ ThreeUI.prototype.prepareThreeJSScene = function() {
 	console.log('plane', this.width* DPR, this.height* DPR)
 	this.plane = new THREE.Mesh(planeGeo, material);
 	this.plane.matrixAutoUpdate = false;
-	this.plane.translateZ(1)
+	// this.plane.translateZ(-1)
 	// this.plane.updateMatrix()
 	this.scene.add(this.plane);
 	this.texture.needsUpdate = true;
-	console.log('uiPlane', this.plane.position)
 };
 
 /**
@@ -451,7 +448,6 @@ ThreeUI.prototype.setPlaneMovHeight = function(newHeight) {
 	this.planeMov.updateMatrix()
 	this.scene.add(this.planeMov);
 	this.textureMov.needsUpdate = true;
-	console.log('uiPlaneMov', this.planeMov.position)
 }
 
 ThreeUI.prototype.enableMov = function() {

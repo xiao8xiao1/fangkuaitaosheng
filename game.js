@@ -8,7 +8,7 @@ var TWEEN = require('./libs/threejs/Tween')
 var AssetLoader = require('./libs/threejs/threeUi/AssetLoader');
 var ThreeUI = require('./libs/threejs/threeUi/ThreeUI.js');
 var PlaceUi = require('ui.js');
-var Mat = require('mat.js');
+
 
 AssetLoader.add.image('images/fenxiang.png');
 AssetLoader.add.image('images/paihang.png');
@@ -28,9 +28,9 @@ AssetLoader.add.image('images/r.png');
 AssetLoader.load(main);
 
 window.levelDirs = ['帮助','水瓶座','双鱼座','白羊座','金牛座','双子座','巨蟹座','狮子座','处女座','天秤座','天蝎座','射手座','魔羯座']
-window.DirDiff = [0,0,1,1,1,1,2,2,2,3,3,3,3]
+window.DirDiff = [0,0,1,0,1,1,2,2,2,3,3,3,3]
 
-var camera, scene, controls, renderer, ui, placeUi, initMouseMov, mat;
+var camera, scene, controls, renderer, ui, placeUi, initMouseMov;
 var bgPlane = null;
 var rooms = [];
 var groups = [];
@@ -130,6 +130,115 @@ function main(){
   animate();
 }
 
+var groupMaterial;
+var uniforms1 = {time: { value: 1.0 }};
+var clock = new THREE.Clock();
+function initMat() {
+  var fragment_shader4 = '\
+  uniform float time;\
+  varying vec2 vUv;\
+  void main( void ) {\
+    vec2 position = - 1.0 + 2.0 * vUv;\
+    float red = abs( sin( position.x * position.y + time / 5.0 ) );\
+    float green = abs( sin( position.x * position.y + time / 4.0 ) );\
+    float blue = abs( sin( position.x * position.y + time / 3.0 ) );\
+    gl_FragColor = vec4( red, green, blue, 0.5 );\
+  }'
+  var fragment_shader3 = '\
+  uniform float time;\
+  varying vec2 vUv;\
+  void main( void ) {\
+    vec2 position = vUv;\
+    float color = 0.0;\
+    color += sin( position.x * cos( time / 15.0 ) * 80.0 ) + cos( position.y * cos( time / 15.0 ) * 10.0 );\
+        color += sin( position.y * sin( time / 10.0 ) * 40.0 ) + cos( position.x * sin( time / 25.0 ) * 40.0 );\
+    color += sin( position.x * sin( time / 5.0 ) * 10.0 ) + sin( position.y * sin( time / 35.0 ) * 80.0 );\
+    color *= sin( time / 10.0 ) * 0.5;\
+    gl_FragColor = vec4( vec3( color, color * 0.5, sin( color + time / 3.0 ) * 0.75 ), 1.0 );\
+  }';
+  var fragment_shader2 = '\
+  uniform float time;\
+  uniform sampler2D texture;\
+  varying vec2 vUv;\
+  void main( void ) {\
+    vec2 position = - 1.0 + 2.0 * vUv;\
+    float a = atan( position.y, position.x );\
+    float r = sqrt( dot( position, position ) );\
+    vec2 uv;\
+    uv.x = cos( a ) / r;\
+    uv.y = sin( a ) / r;\
+    uv /= 10.0;\
+    uv += time * 0.05;\
+    vec3 color = texture2D( texture, uv ).rgb;\
+    gl_FragColor = vec4( color * r * 1.5, 1.0 );\
+  }';
+  
+  var fragment_shader1 = '\
+    uniform float time;\
+    varying vec2 vUv;\
+    void main(void) {\
+      vec2 p = - 1.0 + 2.0 * vUv;\
+      float a = time * 40.0;\
+      float d, e, f, g = 1.0 / 40.0 ,h ,i ,r ,q;\
+      e = 400.0 * ( p.x * 0.5 + 0.5 );\
+      f = 400.0 * ( p.y * 0.5 + 0.5 );\
+      i = 200.0 + sin( e * g + a / 150.0 ) * 20.0;\
+      d = 200.0 + cos( f * g / 2.0 ) * 18.0 + cos( e * g ) * 7.0;\
+      r = sqrt( pow( abs( i - e ), 2.0 ) + pow( abs( d - f ), 2.0 ) );\
+      q = f / r;\
+      e = ( r * cos( q ) ) - a / 2.0;\
+      f = ( r * sin( q ) ) - a / 2.0;\
+      d = sin( e * g ) * 176.0 + sin( e * g ) * 164.0 + r;\
+      h = ( ( f + d ) + a / 2.0 ) * g;\
+      i = cos( h + r * p.x / 1.3 ) * ( e + e + a ) + cos( q * g * 6.0 ) * ( r + h / 3.0 );\
+      h = sin( f * g ) * 144.0 - sin( e * g ) * 212.0 * p.x;\
+      h = ( h + ( f - e ) * q + sin( r - ( a + h ) / 7.0 ) * 10.0 + i / 4.0 ) * g;\
+      i += cos( h * 2.3 * sin( a / 350.0 - q ) ) * 184.0 * sin( q - ( r * 4.3 + a / 12.0 ) * g ) + tan( r * g + h ) * 184.0 * cos( r * g + h );\
+      i = mod( i / 5.6, 256.0 ) / 64.0;\
+      if ( i < 0.0 ) i += 4.0;\
+      if ( i >= 2.0 ) i = 4.0 - i;\
+      d = r / 350.0;\
+      d += sin( d * d * 8.0 ) * 0.52;\
+      f = ( sin( a * g ) + 1.0 ) / 2.0;\
+      gl_FragColor = vec4( vec3( f * i / 1.6, i / 2.0 + d / 13.0, i ) * d * p.x + vec3( i / 1.3 + d / 8.0, i / 2.0 + d / 18.0, i ) * d * ( 1.0 - p.x ), 1.0 );\
+    }';
+
+  var vertexShader ='\
+    varying vec2 vUv;\
+    void main(){\
+      vUv = uv;\
+      vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );\
+      gl_Position = projectionMatrix * mvPosition;\
+    }';
+
+  groupMaterial = new THREE.ShaderMaterial( {
+    uniforms: {time: { value: 1.0 }},//uniforms1,
+    vertexShader: vertexShader,
+    fragmentShader: fragment_shader4
+  } );    
+}
+
+var matShaderRgb = new THREE.ShaderMaterial( {
+  uniforms: {},
+  vertexShader: [
+    "varying vec2 vUV;",
+    "varying vec3 vNormal;",
+    "void main() {",
+      "vUV = uv;",
+      "vNormal = vec3( normal );",
+      "gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "varying vec2 vUV;",
+    "varying vec3 vNormal;",
+    "void main() {",
+      "vec4 c = vec4( abs( vNormal ) + vec3( vUV, 0.0 ), 0.0 );",
+      "gl_FragColor = c;",
+    "}"
+  ].join("\n")
+} );
+
 function animate() {
   // var delta = clock.getDelta();
   // uniforms1.time.value += delta * 5;
@@ -197,14 +306,13 @@ function init() {
 
   ui = new ThreeUI(renderer.domElement, window.innerHeight, true);  
   placeUi = new PlaceUi(ui);
-  mat = new Mat();
 
   // camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
-  var w = window.innerWidth, h = window.innerHeight
+  var w = Math.sqrt(400*400 + 400*400), h = w* window.innerHeight/window.innerWidth
   console.log(w, h)
   camera = new THREE.OrthographicCamera( -w/2, w/2, h/2, -h/2, 1, 2000 );
   // camera.position.set( w/2, h/2, 1000);
-  // camera.position.set(0, 0, 500);
+  //  camera.position.set(0, 0, 1000);
   scene.add(camera)
   camera.remove(bgPlane)
   bgPlane = creatGradPlane(0,0, -1500, w, h, [[0, '#fc3'], [1, '#fcc']])
@@ -212,12 +320,7 @@ function init() {
 
   var axesHelper = new THREE.AxesHelper(400);
   scene.add(axesHelper);
-
-  // Lights
-  scene.add( new THREE.AmbientLight( 0x222222 ) );
-  var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
-  directionalLight.position.set( 1, 1, 1 ).normalize();
-  camera.add( directionalLight );  
+  
 
 
   initMouseMov = new InitMouseMov(renderer, scene, camera, groups, placeUi.groupPlaying);
@@ -304,7 +407,7 @@ function initCubes(funcPlayBack) {
   var w = Math.sqrt(cubeCntX*cubeCntX + cubeCntZ*cubeCntZ)*cubeLen, h = w* window.innerHeight/window.innerWidth
   camera.left=-w/2;camera.right=w/2;camera.top=h/2;camera.bottom=-h/2;camera.near=1;camera.far=2000
   console.log(w, h)
-  console.log('midP', midP)
+  console.log(midP)
   camera.position.copy(midP); camera.position.z +=1000;
   camera.lookAt(midP.x, midP.y, midP.z);
   camera.updateProjectionMatrix()
@@ -599,7 +702,7 @@ function formOneGroup(s, e, lady) {
   //   fragmentShader: fragment_shader4
   // } );    
   var geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-  var group = new Group(geometry, mat.getMat(), posFrom, pos, s, e);
+  var group = new Group(geometry, matShaderRgb, posFrom, pos, s, e);
 
   scene.add(group); groups.push(group);
   var edges = new THREE.LineSegments(new THREE.EdgesGeometry(group.geometry), 
@@ -609,7 +712,7 @@ function formOneGroup(s, e, lady) {
     group.lady = true;
     // group.material.color.setHex(colorGroupLady);
     group.material = new THREE.MeshBasicMaterial({ color:colorGroupLady });
-    group.edges.material.color.setHex(0x1000000 - colorGroupLady);
+    group.edges.material.color.setHex(0x888888)//0x1000000 - colorGroupLady);
 
     var outPos = new THREE.Vector3();
     getOutPosition(s, e, outPos); 
