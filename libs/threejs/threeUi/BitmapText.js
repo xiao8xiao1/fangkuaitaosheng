@@ -1,8 +1,7 @@
-var DisplayObject = require('./DisplayObject.js');
+var DisplayObject = DisplayObject||require('./DisplayObject.js');
 
 /**
- * BitmapText
- * @extends ThreeUI.DisplayObject
+ * BitmapText * @extends ThreeUI.DisplayObject
  *
  * Used internally by ThreeUI, shouldn't be used directly
  * Use ThreeUI.createBitmapText instead to create text

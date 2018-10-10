@@ -1,15 +1,13 @@
-
-
 let screenWidth = wx.getSystemInfoSync().screenWidth
 let screenHeight = wx.getSystemInfoSync().screenHeight
 let ratio = wx.getSystemInfoSync().pixelRatio
 
 let sharedCanvas = wx.getSharedCanvas()
 let sharedCtx = sharedCanvas.getContext('2d')
-
+console.log(wx.getSystemInfoSync())
+console.log(sharedCanvas.width, sharedCanvas.height, ratio)
 let itemCanvas = wx.createCanvas()
 let itemCtx = itemCanvas.getContext('2d')
-
 let myScore = undefined
 let myInfo = {}
 let myRank = undefined
@@ -18,12 +16,12 @@ let datas = []
 function fakeData(count){
     var item = new Object()
     myInfo.avatarUrl = 'images/suc.png'
-    myInfo.nickName = '宏伟'+'(我)'
-    myInfo.score = 100
-    myRank = 8848
+    myInfo.nickName = '宏伟'+4
+    myScore = myInfo.score = 100
+    myRank = 4
     for (var i = 0; i < count;  ++i){
         var item = new Object()
-        item.avatarUrl = 'images/suc.png'
+        item.avatarUrl = 'images/suc.png'        
         if (i === 1)  item.avatarUrl = 'images/suc1.png'
         item.nickname = '宏伟'+i
         item.score = ''+i
@@ -95,7 +93,6 @@ function initRanklist (list, itemCanvasStartY) {
         } else {
             itemCtx.fillStyle = '#302F30'
         }
-        console.log(itemCanvas.width)
         itemCtx.fillRect(0, i * itemHeight, itemCanvas.width, itemHeight)
     }
     var listLength = list.length
@@ -288,11 +285,10 @@ wx.onMessage(data => {
         fakeData(20)
         var y = 3*itemHeight
         initRanklist(datas, y)
-        getMyScore()
+        // getMyScore()
         drawMyRank()
 
-        // show = true
-        console.log('on')    
+        // show = true        console.log('on')    
     } else if(data.type === 'aboutMe'){
         console.log('aboutMe')
         getAndSetMyScore(data.score)
@@ -305,35 +301,35 @@ wx.onMessage(data => {
         console.log('更新最高分')
         getMyScore()
     } else if (data.type === 'stopShow') {
-        // wx.offTouchMove(onMove)
-        // wx.offTouchEnd(onUp)
+        // wx.offTouchMove(onMoveRank)
+        // wx.offTouchEnd(onUpRank)
         show = false
         console.log('off')    
     }
 })
-wx.onTouchMove(onMove)
-wx.onTouchEnd(onUp)
+wx.onTouchMove(onMoveRank)
+wx.onTouchEnd(onUpRank)
 
-let startY = undefined, moveY = 0
+let startY = undefined, movedY = 0
 
 let show = false
-function onMove(e) {
+function onMoveRank(e) {
     if (!show)  return
     let touch = e.touches[0]
     // 触摸移动第一次触发的位置
     if (startY === undefined) {
-        startY = touch.clientY*ratio + moveY
+        startY = touch.clientY*ratio + movedY
     }
-    moveY = startY - touch.clientY*ratio
-    reDrawItem(moveY)
+    movedY = startY - touch.clientY*ratio
+    reDrawItem(movedY)
 }
-function onUp(e) {
+function onUpRank(e) {
     if (!show)  return
     startY = undefined
-    if (moveY < 0) { // 到顶
-        moveY = 0
-    } else if (moveY > itemCanvas.height - 590) { // 到底
-        moveY = itemCanvas.height - 590
+    if (movedY < 0) { // 到顶
+        movedY = 0
+    } else if (movedY > itemCanvas.height - 590) { // 到底
+        movedY = itemCanvas.height - 590
     }
-    reDrawItem(moveY)
+    reDrawItem(movedY)
 }

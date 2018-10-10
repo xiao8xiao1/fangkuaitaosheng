@@ -1,11 +1,11 @@
 import * as THREE from '../three'
-var anchors = require('./anchors.js');
-var DisplayObject = require('./DisplayObject.js');
-var BitmapText = require('./BitmapText.js');
-var Rectangle = require('./Rectangle.js');
-var Sprite = require('./Sprite.js');
-var Text = require('./Text.js');
-var MvCvsSprite = require('./MvCvsSprite.js');
+var anchors = anchors||require('./anchors.js');
+var DisplayObject = DisplayObject||require('./DisplayObject.js');
+var BitmapText = BitmapText||require('./BitmapText.js');
+var Rectangle = Rectangle||require('./Rectangle.js');
+var Sprite = Sprite||require('./Sprite.js');
+var Text = Text||require('./Text.js');
+var MvCvsSprite = MvCvsSprite||require('./MvCvsSprite.js');
 
 // All properties that when adjusted will force a redraw of the UI
 var dirtyProperties = ['x','y','width','height','rotation','alpha','visible','pivot','anchor','smoothing','stretch','offset','text','scale','parent','textAlign','assetPath','color','left','right','up','down','ActiveInvoke'];
@@ -62,11 +62,10 @@ var ThreeUI = function(gameCanvas, height) {
 		this.width* DPR / 2,
 		this.height* DPR / 2,
 		-this.height* DPR / 2,
-		0, 30
+		0, 11
 	);
 	this.camera.position.z = 10;
-	this.scene = new THREE.Scene();	
-	this.movobjCnt = 0;
+	this.scene = new THREE.Scene();		this.movobjCnt = 0;
 	this.hasMoved = false;
 
 	this.addPlaneMov()
@@ -74,6 +73,7 @@ var ThreeUI = function(gameCanvas, height) {
 	// Event listening
     // canvas.addEventListener('touchstart', this.clickHandler.bind(this));
     canvas.addEventListener('touchend', this.clickHandler.bind(this));
+		canvas.addEventListener( "mouseup", this.clickHandler.bind(this));
 };
 
 /**
@@ -445,11 +445,10 @@ ThreeUI.prototype.setPlaneMovHeight = function(newHeight) {
 	this.planeMov.matrixAutoUpdate = false;
 	this.planeMov.translateY(-0.5*(canvas.height - this.height*DPR))
 	this.planeMov.translateZ(1)
-	this.planeMov.updateMatrix()
 	this.scene.add(this.planeMov);
+	this.planeMov.updateMatrix()
 	this.textureMov.needsUpdate = true;
 }
-
 ThreeUI.prototype.enableMov = function() {
 	window.addEventListener('mousedown', onDown);
 

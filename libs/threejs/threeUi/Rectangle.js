@@ -1,8 +1,7 @@
-var DisplayObject = require('./DisplayObject');
+var DisplayObject = DisplayObject||require('./DisplayObject');
 
 /**
- * Rectangle
- * @extends ThreeUI.DisplayObject
+ * Rectangle * @extends ThreeUI.DisplayObject
  * 
  * Used internally by ThreeUI, shouldn't be used directly
  * Use ThreeUI.createRectangle instead to create rectangles

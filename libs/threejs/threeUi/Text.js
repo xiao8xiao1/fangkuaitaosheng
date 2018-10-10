@@ -1,8 +1,7 @@
-var DisplayObject = require('./DisplayObject.js');
+var DisplayObject = DisplayObject||require('./DisplayObject.js');
 
 /**
- * Text
- * @extends DisplayObject
+ * Text * @extends DisplayObject
  *
  * Used internally by ThreeUI, shouldn't be used directly
  * Use ThreeUI.createText instead to create text

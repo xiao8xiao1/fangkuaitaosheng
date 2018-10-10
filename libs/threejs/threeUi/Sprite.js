@@ -1,9 +1,8 @@
-var DisplayObject = require('./DisplayObject.js');
-var AssetLoader = require('./AssetLoader');
+var DisplayObject = DisplayObject||require('./DisplayObject.js');
+var AssetLoader = AssetLoader||require('./AssetLoader');
 /**
  * Sprite
- * @extends ThreeUI.DisplayObject
- * 
+ * @extends ThreeUI.DisplayObject * 
  * Used internally by ThreeUI, shouldn't be used directly
  * Use ThreeUI.createSprite instead to create sprites
  * 

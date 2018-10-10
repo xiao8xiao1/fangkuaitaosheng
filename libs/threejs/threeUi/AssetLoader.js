@@ -365,10 +365,9 @@ AssetLoader.add.css = function(asset) {
  * @param {Function} callback Function that accepts an Object as first argument
  */
 
-var loadGeneric = function(url, callback) {
+AssetLoader.loadGeneric = function(url, callback) {
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', url, true);
-
 	// if (url.indexOf('.zip') !== -1) {
 	// 	// Archives should probably have an adjusted version of "loadGeneric()" instead of this hack
 	// 	xhr.responseType = 'arraybuffer';

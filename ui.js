@@ -1,16 +1,16 @@
-import './libs/weapp-adapter/index'
-import * as THREE from './libs/threejs/three'
-var ThreeUI = require('./libs/threejs/threeUi/ThreeUI.js');
+// import './libs/weapp-adapter/index'
+// import * as THREE from './libs/threejs/three'
+// var ThreeUI = ThreeUI||require('./libs/threejs/threeUi/ThreeUI.js');
 
 let openDataContext = wx.getOpenDataContext();
 let sharedCanvas = openDataContext.canvas;
+console.log('init sharedCanvas',sharedCanvas.width, sharedCanvas.height)
 const ratio = wx.getSystemInfoSync().pixelRatio;
 sharedCanvas.width = window.innerWidth * ratio;
 sharedCanvas.height = window.innerHeight * ratio;
 
 let uiWidth = 414
 let uiHeight= 736
-
 var family = 'Helvetica';//wx.loadFont('images/num.ttf');
 var groupStart, groupPlaying,  rankingTexture, ranking, rankingRetSprite, groupDirs, textDirFile, groupPassLevel, groupTut, groupTut_01;
 
@@ -36,15 +36,20 @@ var PlaceUi = function (paraUi) {
   // var colorIndex = 7;
   groupStart = ui.createGroup(0, 0, uiWidth, uiHeight); 
     var bg = ui.createRectangle(0, 0, uiWidth, uiHeight, window.bgColor); 
-    var gameName = ui.createText('脑力操: 3D快乐方块', 40, family, 'black', 25, 154);
+    var gameName = ui.createText(
+      // '/脑力操: 3D快乐方块'
+      '算法举例'
+      ,40, family, 'black', 25, 154);
     gameName.textBaseline = 'top';  gameName.fontWeight = 'bold';
 
     var rectBegin = ui.createRectangle( 98, 447, 218, 64, '#FFFFFF');
-      var textTemp = ui.createText('开始游戏', 32, family, 'black', 0, 0);  textTemp.fontWeight = 'bold' ;setTextInRect(textTemp, rectBegin);
+      var textTemp = ui.createText(
+        // '开始游戏'
+        'begin'
+        , 32, family, 'black', 0, 0);  textTemp.fontWeight = 'bold' ;setTextInRect(textTemp, rectBegin);
     rectBegin.onClick(function() {
       groupStart.visible = false;
-      groupPlaying.visible = true;
-      ui.dispatchEvent( { type: 'start' } )
+      groupPlaying.visible = true;      ui.dispatchEvent( { type: 'start' } )
       bg.visible = gameName.visible = rectBegin.visible = false;
     });      
 
@@ -60,28 +65,7 @@ var PlaceUi = function (paraUi) {
     var rankingSprite = ui.createGroup(133, 630, 50, 80);
       var temp = ui.createSprite('images/paihang.png', 0, 0, 50, 50);  temp.parent = rankingSprite;
       var textTemp = ui.createText('排行榜', 20, family, 'white', 0, 0);  setTextButtomGroup(textTemp, rankingSprite)
-      rankingSprite.onClick(() => {
-        groupStart.visible = false;
-        rankingRetSprite.visible = true;
-        ranking.visible = true;
-        openDataContext.postMessage({
-          type: 'friends',
-          key: 'score',
-          openId: 'oyJjl5dYt5dB4-jS5ifbsbToVYZ0'})
-        updateRanking()
-        var count_uiRedraw = 0;
-        var flag_uiRedraw = setInterval(function(max) {
-                if (count_uiRedraw >= max) {
-                    clearInterval(flag_uiRedraw);
-                    return;
-                }
-                updateRanking()
-                count_uiRedraw = count_uiRedraw + 1;
-            }, 1000, 3);
-        
-        wx.onTouchMove(updateRanking);
-        wx.onTouchEnd(updateRanking);
-      });
+      rankingSprite.onClick(showRank);
 
     var xiaoxi = ui.createGroup(228, 630, 50, 80);
       var temp = ui.createSprite('images/message.png',0, 0, 50, 50);  temp.parent = xiaoxi;
@@ -162,10 +146,25 @@ var PlaceUi = function (paraUi) {
     
   groupPassLevel = ui.createGroup(0, 0, uiWidth, uiHeight);  groupPassLevel.visible = false;
 
-    // var rectTemp = ui.createRectangle( 0, 45, uiWidth, 50, '#99FF00');  rectTemp.parent = groupPassLevel;
-    // var textTemp = ui.createText('太棒了', 40, family, 'black', 143, 0);  textTemp.fontWeight = 'bold';  textTemp.parent = rectTemp;
-    var rectThisAgain = ui.createRectangle(31, 390, 142, 57, 'white');  rectThisAgain.parent = groupPassLevel;
-      var textTemp = ui.createText('再来一次', 32, family, 'black', 0, 0);  setTextInRect(textTemp, rectThisAgain);
+  var rectAllRank = ui.createRectangle(44, 158, 100, 40, 'white');  rectAllRank.parent = groupPassLevel;
+      var textTemp = ui.createText('全部排行', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectAllRank);
+    rectAllRank.onClick(showRank)      
+
+  var rectSharetoGroup = ui.createRectangle(248, 158, 120, 40, '#99ff00');  rectSharetoGroup.parent = groupPassLevel;
+      var textTemp = ui.createText('群友排行', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectSharetoGroup);
+
+  var rectPlayBack = ui.createRectangle(44, 534, 100, 40, 'white');  rectPlayBack.parent = groupPassLevel;
+      var textTemp = ui.createText('精彩回放', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectPlayBack);
+    rectPlayBack.onClick(function() {
+      groupPlaying.visible = true;
+      ranking.visible = false
+      groupPassLevel.visible = false;
+      groupStart.visible = false;
+      ui.dispatchEvent( { type: 'playBack' } )
+    });
+
+  var rectThisAgain = ui.createRectangle(44, 585, 120, 40, 'white');  rectThisAgain.parent = groupPassLevel;
+      var textTemp = ui.createText('再来一次', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectThisAgain);
     rectThisAgain.onClick(function() {
       groupPlaying.visible = true;
       ranking.visible = false
@@ -174,19 +173,13 @@ var PlaceUi = function (paraUi) {
       ui.dispatchEvent( { type: 'thisAgain' } )
     });
 
-    var rectPlayBack = ui.createRectangle(233, 390, 142, 57, 'white');  rectPlayBack.parent = groupPassLevel;
-      var textTemp = ui.createText('精彩回放', 32, family, 'black', 0, 0);  setTextInRect(textTemp, rectPlayBack);
-    rectPlayBack.onClick(function() {
-      groupPlaying.visible = true;
-      ranking.visible = false
-      groupPassLevel.visible = false;
-      groupStart.visible = false;
-      ui.dispatchEvent( { type: 'playBack' } )
-    });      
-      
-    var rectNext = ui.createRectangle(77, 493, 263, 64, 'white');  rectNext.parent = groupPassLevel;
-      var textTemp = ui.createText('下 一 关', 32, family, 'black', 0, 0);  setTextInRect(textTemp, rectNext);
-      var temp = ui.createSprite('images/scroll_r.png',10, 5, 50, 50);  temp.parent = rectNext; 
+  var rectSharetoFriend = ui.createRectangle(248, 534, 120, 40, '#99ff00');  rectSharetoFriend.parent = groupPassLevel;
+    var textTemp = ui.createText('挑战好友', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectSharetoFriend);
+
+    
+  var rectNext = ui.createRectangle(200, 585, 180, 50, 'white');  rectNext.parent = groupPassLevel;
+      var textTemp = ui.createText('  下一关', 32, family, 'black', 0, 0);  setTextInRect(textTemp, rectNext);
+      var temp = ui.createSprite('images/scroll_r.png',5, 5, 40, 40);  temp.parent = rectNext; 
       rectNext.onClick(function() {
       groupPlaying.visible = true;
       ranking.visible = false
@@ -230,20 +223,23 @@ var PlaceUi = function (paraUi) {
 
   //排行
   {
-    rankingTexture = new THREE.CanvasTexture(sharedCanvas)
+    rankingTexture = new THREE.CanvasTexture(openDataContext.canvas)
     rankingTexture.minFilter = rankingTexture.magFilter = THREE.LinearFilter
     rankingTexture.needsUpdate = true
-    let geometry = new THREE.PlaneGeometry(uiWidth*ratio, uiHeight*ratio)
+    let geometry = new THREE.PlaneGeometry(sharedCanvas.width ,sharedCanvas.height)
     let material = new THREE.MeshBasicMaterial({ map: rankingTexture, transparent: true , opacity:0.8}) 
     ranking = new THREE.Mesh(geometry, material)
+    ranking.matrixAutoUpdate = false;
     ranking.translateZ(-1)
     // ranking.translateY(100)
     ranking.visible = false;
     ui.scene.add(ranking)
+    ranking.updateMatrix()
+
 
     rankingRetSprite = ui.createSprite('images/return.png', 50, 608, 50,50);  rankingRetSprite.visible = false;
-    rankingRetSprite.onClick(() => {
-      groupStart.visible = true;
+    rankingRetSprite.onClick(function() {
+      this.retMenu.visible = true;
       rankingRetSprite.visible = false;
       ranking.visible = false;
       openDataContext.postMessage({type: 'stopShow'})
@@ -252,17 +248,16 @@ var PlaceUi = function (paraUi) {
     });
   }
 }
-
 //某个目录下的关卡
-function createLevelsInADir(index)  {
+/*async*/ function  createLevelsInADir(index)  {
   // arrLevelsInADir  
   // window.levelDirs[index]
   var fs = wx.getFileSystemManager();
-  var files = fs.readFileSync('levels/'+ window.levelDirs[index] +'/dir.txt', "ascii").split("\r\n");  
+  var files = /*await*/ fs.readFileSync('levels/'+ window.levelDirs[index] +'/dir.txt', "ascii")
+  files = files.replace(/\r/g, '').split('\n');  
   console.log(files)
 
-  var groupRectLevels = ui.createRectangle(0, 0, uiWidth, uiHeight, window.bgColor);  
-  arrLevelsInADir[index] = groupRectLevels;
+  var groupRectLevels = ui.createRectangle(0, 0, uiWidth, uiHeight, window.bgColor);    arrLevelsInADir[index] = groupRectLevels;
   var groupLevels = ui.createGroup(0, 0, uiWidth, uiHeight);  groupLevels.isMov = true;  groupLevels.isMov = true;
   groupLevels.parent = groupRectLevels
 
@@ -334,6 +329,30 @@ function shareApp() {
   })
 }
 
+function showRank() {
+  this.parent.visible = false;
+  rankingRetSprite.visible = true;
+  rankingRetSprite.retMenu = this.parent;
+  ranking.visible = true;
+  openDataContext.postMessage({
+    type: 'friends',
+    key: 'score',
+    openId: 'oyJjl5dYt5dB4-jS5ifbsbToVYZ0'})
+  updateRanking()
+  var count_uiRedraw = 0;
+  var flag_uiRedraw = setInterval(function(max) {
+          if (count_uiRedraw >= max) {
+              clearInterval(flag_uiRedraw);
+              return;
+          }
+          updateRanking()
+          count_uiRedraw = count_uiRedraw + 1;
+      }, 1000, 3);
+  
+  wx.onTouchMove(updateRanking);
+  wx.onTouchEnd(updateRanking);
+}
+
 window.setUiDirFile = function(text){
   textDirFile.text = text
 }
@@ -358,6 +377,5 @@ window.showPassLevel = function(score){
   groupPassLevel.visible = true;
   // groupStart.visible = true;
 }
-
 module.exports = PlaceUi;
 // window.placeUi = placeUi;

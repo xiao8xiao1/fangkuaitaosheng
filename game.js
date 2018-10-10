@@ -2,12 +2,15 @@ import './libs/weapp-adapter/index'
 import './libs/symbol'
 import * as THREE from './libs/threejs/three'
 import './libs/threejs/controls/OrbitControls'
-// import TWEEN from './libs/threejs/tween.min'
-var InitMouseMov = require('mouseMov.js');
-var TWEEN = require('./libs/threejs/Tween')
-var AssetLoader = require('./libs/threejs/threeUi/AssetLoader');
-var ThreeUI = require('./libs/threejs/threeUi/ThreeUI.js');
-var PlaceUi = require('ui.js');
+window.THREE = THREE
+var TWEEN = TWEEN||require('./libs/threejs/Tween');
+var InitMouseMov = InitMouseMov||require('./mouseMov.js');
+var AssetLoader = AssetLoader||require('./libs/threejs/threeUi/AssetLoader');
+
+var ThreeUI = ThreeUI||require('./libs/threejs/threeUi/ThreeUI.js');
+window.ThreeUI = ThreeUI
+
+var PlaceUi = PlaceUi||require('./ui.js');
 
 
 AssetLoader.add.image('images/fenxiang.png');
@@ -42,13 +45,9 @@ var msheOpas = [];
 
 var fs = wx.getFileSystemManager();
 
-// fs.readdir({dirPath:'levels', complete:function(res){console.log(res)}})
-// var files1 = fs.readdirSync('levels')
-// console.log(files1)
 window.currentDirIndex = 0;
 window.currentFileIndex = 0;
-var globleDef_string ;
-var globleDef ;
+var globleDef_string ;var globleDef ;
 var groupsDef ;
 var cubeCntX ;
 var cubeCntY ;
@@ -62,11 +61,9 @@ var colorGroupLady = 0xffffff;
 var colorGroup = 0x00f000;
 // var fallSound = new Audio('audio/bullet.mp3');
 var fallSound = wx.createInnerAudioContext();  fallSound.src = 'audio/bullet.mp3';
-
-var colNoMovSound = new Audio('audio/colnomov.mp3');
-var colSound = new Audio('audio/ding.mp3');
-// var colSound = fallSound;
-var winSound = new Audio('audio/level_complete.wav');
+var colSound = fallSound; // var colSound = new Audio('audio/ding.mp3');
+var colNoMovSound = wx.createInnerAudioContext(); colNoMovSound.src = 'audio/ding.mp3';  //'audio/colnomov.mp3';
+var winSound = wx.createInnerAudioContext(); winSound.src = 'audio/level_complete.wav';
 // var groundSound = new Audio('audio/fall_2.mp3');
 // groundSound.loop = true
 // groundSound.play()
@@ -249,9 +246,9 @@ function animate() {
 
   renderer.clear();
   renderer.render( scene, camera );
+  renderer.clearDepth();
   ui.render(renderer);
 }
-
 function getDirLevel(){
   var dirIndex = 0, levelIndex = 0;
   try
@@ -278,12 +275,12 @@ function setDirLevel(dirIndex, fileIndex){
   }
 }
 
-function passDirLevel(){
-  var files = fs.readFileSync('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii").split("\r\n");
+/*async*/ function passDirLevel(){
+  var files = /*await*/ fs.readFileSync('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii")
+  files = files.replace(/\r/g, '').split('\n');
   files.length --;
   console.log(files)
-  if (window.currentFileIndex + 1 < files.length)
-    window.currentFileIndex++
+  if (window.currentFileIndex + 1 < files.length)    window.currentFileIndex++
   else if (window.currentDirIndex + 1 < window.levelDirs.length){
     window.currentDirIndex++;
     window.currentFileIndex = 0;
@@ -321,18 +318,39 @@ function init() {
   var axesHelper = new THREE.AxesHelper(400);
   scene.add(axesHelper);
   
-
+  initLight()
 
   initMouseMov = new InitMouseMov(renderer, scene, camera, groups, placeUi.groupPlaying);
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  initMouseMov.controls = controls;
+  controls = new THREE.OrbitControls(camera, renderer.domElement);  initMouseMov.controls = controls;
   // controls.enablePan = false;  
+}
+
+var directionalLightUp, directionalLightDown, pointLight
+function initLight(){
+  scene.add(new THREE.AmbientLight( 0x333333 ));
+
+  directionalLightUp = new THREE.DirectionalLight(0xffffff, 10);
+  directionalLightDown = new THREE.DirectionalLight(0xffffff, 10);  
+  camera.add( directionalLightUp );  camera.add( directionalLightDown );  
+
+
+  var particleLight = new THREE.Mesh( new THREE.SphereBufferGeometry( 10, 8, 8 ), new THREE.MeshBasicMaterial( { color: 0xffffff } ) );  
+  pointLight = new THREE.PointLight( 0xffffff, 1 );
+  // scene.add( particleLight );  
+  particleLight.add( pointLight );  
+}
+function moveLight(midP, camDisdance){
+  // particleLight.position.copy(midP)
+  directionalLightUp.position.set(0, camDisdance/10, -2*camDisdance)
+  directionalLightUp.target.position.set(0, 0, -camDisdance)
+
+  directionalLightDown.target.position.set(0, 0, -camDisdance)
+  directionalLightDown.position.set(0, -camDisdance/10, -2*camDisdance)  
 }
 
 function creatGradPlane(x,y,z, w,h, colors ,startX, startY, endX, endY){
   if (startX === undefined){
-      startX= 0;  startY = 0;
-      endX = 0; endY = h;
+      startX= 0;  startY = 0;      endX = 0; endY = h;
   }
   var canvas = document.createElement('canvas');
   canvas.width = w;
@@ -386,29 +404,30 @@ function removeCubes(){
   placeUi.groupTut.visible = false;  
   placeUi.groupTut_01.visible = false;  
 }
-function initCubes(funcPlayBack) {
+/*async*/ function initCubes(funcPlayBack) {
   if (window.currentDirIndex > window.levelDirs.length)
     window.currentFileIndex = 0;
-  var files = fs.readFileSync('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii").split("\r\n");
+  var files = /*await*/ fs.readFileSync('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii")
+  files = files.replace(/\r/g, '').split('\n');
   files.length--;
   if (window.currentFileIndex >= files.length)
     window.currentFileIndex = 0;  
 
-  globleDef_string = fs.readFileSync('levels/'+window.levelDirs[window.currentDirIndex]+'/'+files[window.currentFileIndex], "ascii");
+  globleDef_string = /*await*/ fs.readFileSync('levels/'+window.levelDirs[window.currentDirIndex]+'/'+files[window.currentFileIndex], "ascii");
   var temp = files[window.currentFileIndex].split(".");
   window.setUiDirFile(window.levelDirs[window.currentDirIndex] +' : '+ temp[0])
-  globleDef = JSON.parse(globleDef_string);
-  groupsDef = globleDef.groupsDef;
+  globleDef = JSON.parse(globleDef_string);  groupsDef = globleDef.groupsDef;
   cubeCntX = new Number(globleDef.cubeCntX);
   cubeCntY = new Number(globleDef.cubeCntY);
   cubeCntZ = new Number(globleDef.cubeCntZ);
+  var camDisdance = Math.max(cubeCntX, cubeCntY, cubeCntZ) * cubeLen * 2;
   midP = new THREE.Vector3((cubeCntX / 2 - 0.5) * cubeLen, (cubeCntY / 2 - 0.5) * cubeLen, (cubeCntZ / 2 - 0.5) * cubeLen);
 
   var w = Math.sqrt(cubeCntX*cubeCntX + cubeCntZ*cubeCntZ)*cubeLen, h = w* window.innerHeight/window.innerWidth
   camera.left=-w/2;camera.right=w/2;camera.top=h/2;camera.bottom=-h/2;camera.near=1;camera.far=2000
   console.log(w, h)
   console.log(midP)
-  camera.position.copy(midP); camera.position.z +=1000;
+  camera.position.copy(midP); camera.position.z += camDisdance;
   camera.lookAt(midP.x, midP.y, midP.z);
   camera.updateProjectionMatrix()
 
@@ -420,10 +439,12 @@ function initCubes(funcPlayBack) {
   controls.target.copy(midP);  controls.rotateLeft(Math.PI/4);  controls.rotateUp(Math.PI/6)
   controls.update();
 
+  moveLight(midP, camDisdance)
+
   //room
   var geometry = new THREE.BoxGeometry(cubeCntX * cubeLen, cubeCntY * cubeLen, cubeCntZ * cubeLen);
-  roomEdges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), 
-                                  new THREE.LineBasicMaterial({ color: 0xf0f0f0, linewidth: 5 }));
+  roomEdges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry),
+                                     new THREE.LineBasicMaterial({ color: 0xf0f0f0, linewidth: 10 }));
   // var material = new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity : 1 });
   // var geometry = new THREE.BoxGeometry(cubeCntX * cubeLen, cubeCntY * cubeLen, cubeCntZ * cubeLen);
   // var roomEdges = new THREE.Mesh(geometry, material);  
@@ -435,18 +456,16 @@ function initCubes(funcPlayBack) {
   for ( var i = 0; i < 6; i ++ ) {
     startH += 60
     materials.push(new THREE.MeshBasicMaterial({
-      color: 'hsla('+ startH +',50%,50%)' ,
+      color: 'hsla('+ startH +',20%,40%)' ,
       side: THREE.BackSide
     }));
   }
   var geometry = new THREE.BoxBufferGeometry( cubeCntX * cubeLen, cubeCntY * cubeLen, cubeCntZ * cubeLen );
   var mesh = new THREE.Mesh( geometry, materials );
-  // mesh.position.copy(midP);
   roomEdges.add( mesh );
 
   // Cube
-  var i, j, k;
-  var index = 0;
+  var i, j, k;  var index = 0;
   for (i = 0; i < cubeCntX; ++i)
     for (j = 0; j < cubeCntY; ++j)
       for (k = 0; k < cubeCntZ; ++k) {
@@ -456,12 +475,12 @@ function initCubes(funcPlayBack) {
         room.occupied = false;
       }
 
+  var hColor = Math.random()
   for (var i = 0; i < groupsDef.length; ++i) {
-    formOneGroup(groupsDef[i].s, groupsDef[i].e, groupsDef[i].lady);
+    formOneGroup(groupsDef[i].s, groupsDef[i].e, groupsDef[i].lady, hColor+i/groupsDef.length);
   }
 
-  fallTweens = [];
-  for (var i = 0; i < groups.length; ++i)
+  fallTweens = [];  for (var i = 0; i < groups.length; ++i)
     fallTweens.push(
       new TWEEN.Tween( groups[i].position ).to( groups[i].posTo, 200 ).delay(1000+i*250).
       onComplete(function() {
@@ -642,8 +661,17 @@ Group.prototype.moveGroup = function (movVec, selectMeshInitPos) {
   return stepVec3.multiplyScalar(i);
 }
 
+var savedHsl = { h: 0, s: 0, l: 0 }
+Group.prototype.onPointerDown = function () {
+  this.material.color.getHSL(savedHsl);
+  this.material.color.setHSL(savedHsl.h, 1, 1)
+  this.edges.material.linewidth = 10;
+}
 
 Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
+    this.material.color.setHSL(savedHsl.h, savedHsl.s, savedHsl.l)
+    this.edges.material.linewidth = 1;
+
     if (!(movedSteps.x===0 && movedSteps.y===0 && movedSteps.z===0)) {
     arrMovStepRec.push([groups.indexOf(this), movedSteps.x, movedSteps.y, movedSteps.z]);
     var nowStartVec3 = new THREE.Vector3().copy(rooms[this.start]);
@@ -672,11 +700,10 @@ Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
 //   }
 // })
 
-function formOneGroup(s, e, lady) {
+function formOneGroup(s, e, lady, hColor) {
   var pos = new THREE.Vector3();
   pos.copy(rooms[s]).add((rooms[e])).divideScalar(2).multiplyScalar(cubeLen);
   var posFrom = pos.clone();  posFrom.y = cubeLen*cubeCntY*4;
-
   var size = new THREE.Vector3();
   size.copy(rooms[e]).sub(rooms[s]).multiplyScalar(cubeLen);
 
@@ -701,12 +728,18 @@ function formOneGroup(s, e, lady) {
   //   vertexShader: vertexShader,
   //   fragmentShader: fragment_shader4
   // } );    
+
+  if (hColor > 1) 
+    hColor -= 1
+  var color = new THREE.Color().setHSL(hColor, 0.8, 0.5);
+  console.log('hColor', hColor)
+  var material = new THREE.MeshPhongMaterial({ color:color,  specular:0xffffff, shininess:60 });
   var geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-  var group = new Group(geometry, matShaderRgb, posFrom, pos, s, e);
+  var group = new Group(geometry, material, posFrom, pos, s, e);
 
   scene.add(group); groups.push(group);
   var edges = new THREE.LineSegments(new THREE.EdgesGeometry(group.geometry), 
-                                    new THREE.LineBasicMaterial({ color: 0x1000000 - colorGroup , linewidth: 5}));
+                                    new THREE.LineBasicMaterial({ color: 0x1000000 - color.getHex() , linewidth: 1}));
   group.add(edges); group.edges = edges;
   if (lady === true) {
     group.lady = true;
@@ -854,10 +887,12 @@ function shakeGroup(shakeedGroup, step){
   if (shakeedGroup === null)
       console.log('error')
   if (step == 1){
-    colNoMovSound.currentTime = 0;   colNoMovSound.play();
+    // colNoMovSound.stop();   
+    colNoMovSound.play();
   }
   else{
-    colSound.currentTime = 0;   colSound.play();
+    // colSound.stop();   
+    colSound.play();
   }
   // shakeedGroup.material.color.setHex(0xff0000);
   var t1 = new TWEEN.Tween(shakeedGroup.scale).to(new THREE.Vector3(0.9,0.9,0.9), 100)
@@ -865,24 +900,7 @@ function shakeGroup(shakeedGroup, step){
   t1.chain(t2);
   t1.start();
 }
-function shakeOutSide(workVec3){}
 
-function isIntersect(start1, end1, start2, end2) {
-  var zero = new THREE.Vector3(0, 0, 0);
-  if (start1 === start2 || start1 == end2 || end1 == start2 || end1 == end2)
-    return true;
-
-  var s1e1 = new THREE.Vector3(); s1e1.subVectors(end1, start1);
-  var s1s2 = new THREE.Vector3(); s1e1.subVectors(start2, start1);
-  var s1e2 = new THREE.Vector3(); s1e1.subVectors(end2, start1);
-
-  var cross_s2 = new THREE.Vector3(); cross_s2.crossVectors(s1e1, s1s2);
-  var cross_e2 = new THREE.Vector3(); cross_e2.crossVectors(s1e1, s1e2);
-
-  if (cross_s2 === zero && cross_e2 === zero) {
-
-  }
-}
 
 function playBack(){
   var movTweens = []

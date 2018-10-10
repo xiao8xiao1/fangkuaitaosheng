@@ -1,9 +1,8 @@
-import * as THREE from './libs/threejs/three'
-var initMouseMov = function (renderer, scene, camera, groups, groupPlaying){
+// import * as THREE from './libs/threejs/three'
+var InitMouseMov = function (renderer, scene, camera, groups, groupPlaying){
     var ray, pointerVector, selectMesh, plane = null, planeXY, planeXZ, planeYZ, _dragging = false, mov;
     var startPos = new THREE.Vector2();
-    var mov2 = new THREE.Vector2();
-    var eye = new THREE.Vector3();
+    var mov2 = new THREE.Vector2();    var eye = new THREE.Vector3();
     var selectMeshInitPos = new THREE.Vector3(0, 0, 0);
     var scope = this;
 
@@ -26,13 +25,12 @@ var initMouseMov = function (renderer, scene, camera, groups, groupPlaying){
       ray = new THREE.Raycaster();
       pointerVector = new THREE.Vector2();
       mov = new THREE.Vector3();
-      // renderer.domElement.addEventListener("mousedown", onPointerDown, false);
-      // renderer.domElement.addEventListener("mousemove", onPointerMove, false);
-      // renderer.domElement.addEventListener("mouseup", onPointerUp, false);
+      renderer.domElement.addEventListener("mousedown", onPointerDown, false);
+      renderer.domElement.addEventListener("mousemove", onPointerMove, false);
+      renderer.domElement.addEventListener("mouseup", onPointerUp, false);
       canvas.addEventListener('touchstart', onPointerDown)
       canvas.addEventListener('touchmove', onPointerMove)
-      canvas.addEventListener('touchend', onPointerUp)    
-    }
+      canvas.addEventListener('touchend', onPointerUp)        }
   
     function onPointerDown(event) {
       if (!groupPlaying.visible)  {
@@ -54,7 +52,7 @@ var initMouseMov = function (renderer, scene, camera, groups, groupPlaying){
           event.stopPropagation();
           startPos.x = pointer.clientX; startPos.y = pointer.clientY;
           selectMesh = intersect.object;
-  
+          selectMesh.onPointerDown()
           planeXY.position.copy(intersect.point); planeXZ.position.copy(intersect.point); planeYZ.position.copy(intersect.point);
           // move at self_axis begin
           // selectMesh.matrixWorld.extractBasis (axis3x, axis3y, axis3z);  
@@ -130,11 +128,10 @@ var initMouseMov = function (renderer, scene, camera, groups, groupPlaying){
   
           // selectMesh.position.copy(selectMeshInitPos).add(ActMov);	selectMesh.__dirtyPosition = true;
           movedSteps = selectMesh.moveGroup(ActMov, selectMeshInitPos);
-          console.log('move',movedSteps)
+          // console.log('move',movedSteps)
           plane.position.copy(intersect.point);
           plane.updateMatrixWorld();
-          selectMesh.updateMatrixWorld();
-        }
+          selectMesh.updateMatrixWorld();        }
       }
     }
   
@@ -170,7 +167,7 @@ var initMouseMov = function (renderer, scene, camera, groups, groupPlaying){
     }
   }
 
-  initMouseMov.prototype = Object.create( THREE.EventDispatcher.prototype );
-  initMouseMov.prototype.constructor = initMouseMov;  
+  InitMouseMov.prototype = Object.create( THREE.EventDispatcher.prototype );
+  InitMouseMov.prototype.constructor = InitMouseMov;  
 
-  module.exports = initMouseMov;
+  module.exports = InitMouseMov;

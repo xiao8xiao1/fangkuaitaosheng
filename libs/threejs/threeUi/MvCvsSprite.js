@@ -1,8 +1,7 @@
-var DisplayObject = require('./DisplayObject.js');
+var DisplayObject = DisplayObject||require('./DisplayObject.js');
 
 var MvCvsSprite = function(ui, asset, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height) {
-    DisplayObject.bind(this)(ui, x, y, width, height);
-    this.asset = asset;
+    DisplayObject.bind(this)(ui, x, y, width, height);    this.asset = asset;
     this.sourceX = sourceX
     this.sourceY = sourceY
     this.sourceWidth = sourceWidth;

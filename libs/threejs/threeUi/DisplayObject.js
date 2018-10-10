@@ -1,8 +1,7 @@
-var anchors = require('./anchors.js');
+var anchors = anchors||require('./anchors.js');
 
 /**
- * DisplayObject
- *
+ * DisplayObject *
  * Used internally by ThreeUI, shouldn't be used directly
  * Use ThreeUI.createSprite and ThreeUI.createRectangle methods instead
  *
