@@ -1,4 +1,4 @@
-import * as THREE from '../three'
+// import * as THREE from '../three'
 var anchors = anchors||require('./anchors.js');
 var DisplayObject = DisplayObject||require('./DisplayObject.js');
 var BitmapText = BitmapText||require('./BitmapText.js');

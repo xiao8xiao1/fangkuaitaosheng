@@ -22,7 +22,6 @@ AssetLoader.add.image('images/suc.png');
 AssetLoader.add.image('images/return.png');
 AssetLoader.add.image('images/levels.png');
 AssetLoader.add.image('images/scroll_r.png');
-AssetLoader.add.image('images/star-on.png');
 AssetLoader.add.image('images/left.png');
 AssetLoader.add.image('images/up.png');
 AssetLoader.add.image('images/l.png');
@@ -31,7 +30,8 @@ AssetLoader.add.image('images/r.png');
 AssetLoader.load(main);
 
 window.levelDirs = ['帮助','水瓶座','双鱼座','白羊座','金牛座','双子座','巨蟹座','狮子座','处女座','天秤座','天蝎座','射手座','魔羯座']
-window.DirDiff = [0,0,1,0,1,1,2,2,2,3,3,3,3]
+window.DirDiff = [1,1,2,2,2,2,3,3,3,4,4,4,4]
+
 
 var camera, scene, controls, renderer, ui, placeUi, initMouseMov;
 var bgPlane = null;
@@ -93,14 +93,14 @@ function main(){
   //     (res) => { console.log(res) ;button.hide()}
       
   //   )
-  [window.currentDirIndex, window.currentFileIndex] = getDirLevel();
+  [window.currentDirIndex, window.currentFileIndex] = getFirstDirLevel();
   init();
   // initCubes();
   ui.addEventListener ('start', function(e) {initCubes();});
   // ui.addEventListener ('home', removeCubes);  
   ui.addEventListener ('selectDirFile', function(e){
     window.currentDirIndex = e.dirIndex;  window.currentFileIndex = e.fileIndex;
-    setDirLevel(window.currentDirIndex, window.currentFileIndex)
+    setDirLevel(window.currentDirIndex, window.currentFileIndex, 0)
     removeCubes()
     arrMovStepRec = [];
     initCubes()
@@ -249,6 +249,9 @@ function animate() {
   renderer.clearDepth();
   ui.render(renderer);
 }
+
+window.levelStateArrArr = [[],[],[],[],[],[],[],[],[],[],[],[]]
+
 function getDirLevel(){
   var dirIndex = 0, levelIndex = 0;
   try
@@ -263,7 +266,18 @@ function getDirLevel(){
   return [dirIndex, levelIndex];
 }
 
-function setDirLevel(dirIndex, fileIndex){
+function getFirstDirLevel(){
+  for (var i = 0; i < levelStateArrArr.length; ++i){
+    for (var j = 0; j < levelStateArrArr[i].length; ++i){
+      if (!levelStateArrArr[i][j]){
+        return [i, j];
+      }
+    }
+  }
+  return [0, 0]
+}
+
+function setDirLevel(dirIndex, fileIndex, passed){
   var text = ''+dirIndex+','+fileIndex
   try
   {
@@ -273,24 +287,50 @@ function setDirLevel(dirIndex, fileIndex){
   {
     console.log(errMsg)
   }
+  levelStateArrArr[dirIndex][fileIndex] = passed;
 }
 
-/*async*/ function passDirLevel(){
-  var files = /*await*/ fs.readFileSync('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii")
+window.getLevelState = function (dirIndex, fileIndex){
+  if(!levelStateArrArr[dirIndex])
+    return undefined;
+  return levelStateArrArr[dirIndex][fileIndex];
+}
+
+window.myCoins = 0;
+window.subMyCoin = function (coins){
+  if (myCoins >= coins){
+    myCoins -= coins;
+    return true;
+  }
+  return false;
+}
+
+window.getNextDirLevel = function (){
+  // var files = async fs.readFileSync
+  var files = fs.readFileSync
+      ('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii");
   files = files.replace(/\r/g, '').split('\n');
   files.length --;
-  console.log(files)
-  if (window.currentFileIndex + 1 < files.length)    window.currentFileIndex++
+  // var files = []; files.length = 64;
+  var tmpDirIndex, tmpFileIndex;
+  if (window.currentFileIndex + 1 < files.length){
+    tmpDirIndex = window.currentDirIndex
+    tmpFileIndex = window.currentFileIndex+1
+  }
   else if (window.currentDirIndex + 1 < window.levelDirs.length){
-    window.currentDirIndex++;
-    window.currentFileIndex = 0;
+    tmpDirIndex = window.currentDirIndex+1;
+    tmpFileIndex = 0;
   }
   else{
     console.log('pass all levels')
-    window.currentDirIndex = 0
-    window.currentFileIndex = 0
+    tmpDirIndex = 0
+    tmpFileIndex = 0
   }
-  setDirLevel(window.currentDirIndex, window.currentFileIndex)
+  return [tmpDirIndex, tmpFileIndex];
+}
+function passDirLevel(){
+  [window.currentDirIndex, window.currentFileIndex] = getNextDirLevel();
+  setDirLevel(window.currentDirIndex, window.currentFileIndex, 0)  
 }
 
 function init() {
@@ -325,27 +365,70 @@ function init() {
   // controls.enablePan = false;  
 }
 
-var directionalLightUp, directionalLightDown, pointLight
+var directionalLightUp, directionalLightDown, directionalLightLeft, directionalLightRight, pointLight
 function initLight(){
-  scene.add(new THREE.AmbientLight( 0x333333 ));
+  scene.add(new THREE.AmbientLight( 0xffffff ));
+  // scene.add( new THREE.HemisphereLight(0xff8888, 0x8888fff) );
 
-  directionalLightUp = new THREE.DirectionalLight(0xffffff, 10);
-  directionalLightDown = new THREE.DirectionalLight(0xffffff, 10);  
+  directionalLightUp = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLightDown = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLightLeft = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLightRight = new THREE.DirectionalLight(0xffffff, 1);  
   camera.add( directionalLightUp );  camera.add( directionalLightDown );  
+  camera.add( directionalLightLeft );  camera.add( directionalLightRight );    
 
-
-  var particleLight = new THREE.Mesh( new THREE.SphereBufferGeometry( 10, 8, 8 ), new THREE.MeshBasicMaterial( { color: 0xffffff } ) );  
-  pointLight = new THREE.PointLight( 0xffffff, 1 );
+  // pointLight = new THREE.PointLight( 0x020202, 1 );
   // scene.add( particleLight );  
-  particleLight.add( pointLight );  
+  // camera.add( pointLight );  
 }
 function moveLight(midP, camDisdance){
   // particleLight.position.copy(midP)
-  directionalLightUp.position.set(0, camDisdance/10, -2*camDisdance)
-  directionalLightUp.target.position.set(0, 0, -camDisdance)
+  directionalLightUp.position.set(0, camDisdance/4, -2*camDisdance)
+  directionalLightDown.position.set(0, -camDisdance/2, -2*camDisdance)  
+  directionalLightLeft.position.set(camDisdance/4, 0, -2*camDisdance)
+  directionalLightRight.position.set(-camDisdance/2, 0, -2*camDisdance)  
 
-  directionalLightDown.target.position.set(0, 0, -camDisdance)
-  directionalLightDown.position.set(0, -camDisdance/10, -2*camDisdance)  
+}
+
+var arrMat = [];
+function initMat(cnt){
+  arrMat = [];
+  if (cnt <= 18){
+    var hColor = 0.1 * Math.random()
+    var step = 1/cnt    
+    for (var i = 0; i < cnt; ++i) {
+      hColor += step;
+      if (hColor > 1)
+        hColor -= 1;
+      console.log('hColor', i, hColor)
+      if (i % 2)
+        arrMat.push(new THREE.MeshPhongMaterial({ color:new THREE.Color().setHSL(hColor, 0.5, 0.5),  
+                                  specular:0xffffff, shininess:30 }));
+      else
+        arrMat.push(new THREE.MeshStandardMaterial({ color:new THREE.Color().setHSL(hColor, 0.5, 0.5),  
+                                metalness:0.1, roughness:0.1 }));
+    }
+  } else {
+    var hColor = 0.1 * Math.random()
+    for (var i = 0; i < 18; ++i) {
+      hColor += 1/18;
+      if (hColor > 1)
+        hColor -= 1;
+      console.log('hColor', hColor)
+      if (i % 2)
+        arrMat.push(new THREE.MeshPhongMaterial({ color:new THREE.Color().setHSL(hColor, 0.5, 0.5),  
+                                  specular:0xffffff, shininess:30 }));
+      else
+        arrMat.push(new THREE.MeshStandardMaterial({ color:new THREE.Color().setHSL(hColor, 0.5, 0.5),  
+                                metalness:0.1, roughness:0.1 }));
+    }
+    for (var i = 0; i < cnt - 18; ++i) {
+      if (i % 2)
+        arrMat.push(matShaderRgb)
+      else
+        arrMat.push(new THREE.MeshNormalMaterial())
+    }
+  }
 }
 
 function creatGradPlane(x,y,z, w,h, colors ,startX, startY, endX, endY){
@@ -404,16 +487,22 @@ function removeCubes(){
   placeUi.groupTut.visible = false;  
   placeUi.groupTut_01.visible = false;  
 }
-/*async*/ function initCubes(funcPlayBack) {
+// async 
+function initCubes(funcPlayBack)
+{
   if (window.currentDirIndex > window.levelDirs.length)
     window.currentFileIndex = 0;
-  var files = /*await*/ fs.readFileSync('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii")
+  // var files = await fs.readFileSync
+  var files = fs.readFileSync
+      ('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii");
   files = files.replace(/\r/g, '').split('\n');
   files.length--;
   if (window.currentFileIndex >= files.length)
     window.currentFileIndex = 0;  
 
-  globleDef_string = /*await*/ fs.readFileSync('levels/'+window.levelDirs[window.currentDirIndex]+'/'+files[window.currentFileIndex], "ascii");
+  // globleDef_string = await fs.readFileSync
+  globleDef_string = fs.readFileSync  
+      ('levels/'+window.levelDirs[window.currentDirIndex]+'/'+files[window.currentFileIndex], "ascii");
   var temp = files[window.currentFileIndex].split(".");
   window.setUiDirFile(window.levelDirs[window.currentDirIndex] +' : '+ temp[0])
   globleDef = JSON.parse(globleDef_string);  groupsDef = globleDef.groupsDef;
@@ -475,9 +564,9 @@ function removeCubes(){
         room.occupied = false;
       }
 
-  var hColor = Math.random()
+  initMat(groupsDef.length - 1)
   for (var i = 0; i < groupsDef.length; ++i) {
-    formOneGroup(groupsDef[i].s, groupsDef[i].e, groupsDef[i].lady, hColor+i/groupsDef.length);
+    formOneGroup(groupsDef[i].s, groupsDef[i].e, groupsDef[i].lady);
   }
 
   fallTweens = [];  for (var i = 0; i < groups.length; ++i)
@@ -664,7 +753,7 @@ Group.prototype.moveGroup = function (movVec, selectMeshInitPos) {
 var savedHsl = { h: 0, s: 0, l: 0 }
 Group.prototype.onPointerDown = function () {
   this.material.color.getHSL(savedHsl);
-  this.material.color.setHSL(savedHsl.h, 1, 1)
+  this.material.color.setHSL(savedHsl.h, 0.8, 0.8)
   this.edges.material.linewidth = 10;
 }
 
@@ -680,6 +769,7 @@ Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
     nowEndVec3.add(movedSteps);
     if (this.lady === true && nowEndVec3.z >= cubeCntZ) {
       winSound.play();
+      setDirLevel(window.currentDirIndex, window.currentFileIndex, 1)
       window.showPassLevel(1);
     }
     else {
@@ -700,7 +790,7 @@ Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
 //   }
 // })
 
-function formOneGroup(s, e, lady, hColor) {
+function formOneGroup(s, e, lady) {
   var pos = new THREE.Vector3();
   pos.copy(rooms[s]).add((rooms[e])).divideScalar(2).multiplyScalar(cubeLen);
   var posFrom = pos.clone();  posFrom.y = cubeLen*cubeCntY*4;
@@ -729,17 +819,14 @@ function formOneGroup(s, e, lady, hColor) {
   //   fragmentShader: fragment_shader4
   // } );    
 
-  if (hColor > 1) 
-    hColor -= 1
-  var color = new THREE.Color().setHSL(hColor, 0.8, 0.5);
-  console.log('hColor', hColor)
-  var material = new THREE.MeshPhongMaterial({ color:color,  specular:0xffffff, shininess:60 });
+
   var geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+  var material = arrMat.pop()
   var group = new Group(geometry, material, posFrom, pos, s, e);
 
   scene.add(group); groups.push(group);
   var edges = new THREE.LineSegments(new THREE.EdgesGeometry(group.geometry), 
-                                    new THREE.LineBasicMaterial({ color: 0x1000000 - color.getHex() , linewidth: 1}));
+                                    new THREE.LineBasicMaterial({ color: 0x888888 , linewidth: 1}));
   group.add(edges); group.edges = edges;
   if (lady === true) {
     group.lady = true;
@@ -751,7 +838,7 @@ function formOneGroup(s, e, lady, hColor) {
     getOutPosition(s, e, outPos); 
     // var outDoor = new THREE.Mesh(new THREE.BoxGeometry(cubeLen, cubeLen, cubeLen), 
     //                               new THREE.MeshBasicMaterial({ color: 0xffffff, opacity : 1 }));  
-    outDoor = new THREE.Mesh( new THREE.CylinderBufferGeometry( 2, 10, 50, 12 ), new THREE.MeshNormalMaterial());
+    outDoor = new THREE.Mesh( new THREE.CylinderBufferGeometry( 2, 15, 80, 12 ), new THREE.MeshNormalMaterial());
     outDoor.rotateX( Math.PI / 2 );    outDoor.position.copy(outPos);  outDoor.position.z -= 20
     scene.add(outDoor);
     var tmpPos = new THREE.Vector3().copy(outDoor.position);  tmpPos.z += 80

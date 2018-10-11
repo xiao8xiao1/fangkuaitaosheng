@@ -2,10 +2,9 @@ let screenWidth = wx.getSystemInfoSync().screenWidth
 let screenHeight = wx.getSystemInfoSync().screenHeight
 let ratio = wx.getSystemInfoSync().pixelRatio
 
-let sharedCanvas = wx.getSharedCanvas()
-let sharedCtx = sharedCanvas.getContext('2d')
+let sharedCtx = wx.getSharedCanvas().getContext('2d')
 console.log(wx.getSystemInfoSync())
-console.log(sharedCanvas.width, sharedCanvas.height, ratio)
+console.log(sharedCtx.width, sharedCtx.height, ratio)
 let itemCanvas = wx.createCanvas()
 let itemCtx = itemCanvas.getContext('2d')
 let myScore = undefined
@@ -206,7 +205,9 @@ function getAndSetMyScore (score) {
         success: res => {
             let data = res
             console.log(data)
-            let myScore = parseInt(data.KVDataList[0].value) || 0
+            var myScore = 0
+            if (data.KVDataList[0])
+                myScore = parseInt(data.KVDataList[0].value)
             myScore += parseInt(score)
             saveMyScore(myScore)
         }
@@ -288,7 +289,7 @@ wx.onMessage(data => {
         // getMyScore()
         drawMyRank()
 
-        // show = true        console.log('on')    
+        // show = true
     } else if(data.type === 'aboutMe'){
         console.log('aboutMe')
         getAndSetMyScore(data.score)

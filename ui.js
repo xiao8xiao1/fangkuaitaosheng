@@ -5,9 +5,8 @@
 let openDataContext = wx.getOpenDataContext();
 let sharedCanvas = openDataContext.canvas;
 console.log('init sharedCanvas',sharedCanvas.width, sharedCanvas.height)
-const ratio = wx.getSystemInfoSync().pixelRatio;
-sharedCanvas.width = window.innerWidth * ratio;
-sharedCanvas.height = window.innerHeight * ratio;
+sharedCanvas.width = window.innerWidth * wx.getSystemInfoSync().pixelRatio;
+sharedCanvas.height = window.innerHeight * wx.getSystemInfoSync().pixelRatio;
 
 let uiWidth = 414
 let uiHeight= 736
@@ -15,7 +14,7 @@ var family = 'Helvetica';//wx.loadFont('images/num.ttf');
 var groupStart, groupPlaying,  rankingTexture, ranking, rankingRetSprite, groupDirs, textDirFile, groupPassLevel, groupTut, groupTut_01;
 
 window.bgColor = '#33ccff'
-var difficults = ['[简单]', '[普通]', '[困难]', '[挑战]'];
+var difficults = ['','[简单]', '[普通]', '[困难]', '[挑战]'];
 var colors = [['rgba(215, 219, 230, 1)', 'rgba(188, 190, 199, 1)'], 
               ['rgba(255, 231, 220, 1)', 'rgba(255, 196, 204, 1)'], 
               ['rgba(255, 224, 163, 1)', 'rgba(255, 202, 126, 1)'], 
@@ -37,15 +36,13 @@ var PlaceUi = function (paraUi) {
   groupStart = ui.createGroup(0, 0, uiWidth, uiHeight); 
     var bg = ui.createRectangle(0, 0, uiWidth, uiHeight, window.bgColor); 
     var gameName = ui.createText(
-      // '/脑力操: 3D快乐方块'
-      '算法举例'
-      ,40, family, 'black', 25, 154);
+      '方块逃生3D'
+      ,40, family, 'black', 110, 154);
     gameName.textBaseline = 'top';  gameName.fontWeight = 'bold';
 
     var rectBegin = ui.createRectangle( 98, 447, 218, 64, '#FFFFFF');
       var textTemp = ui.createText(
-        // '开始游戏'
-        'begin'
+        '开始游戏'
         , 32, family, 'black', 0, 0);  textTemp.fontWeight = 'bold' ;setTextInRect(textTemp, rectBegin);
     rectBegin.onClick(function() {
       groupStart.visible = false;
@@ -115,6 +112,7 @@ var PlaceUi = function (paraUi) {
           createLevelsInADir(this.index)
         }
         else {
+          setDirLevelState(this.index)
           arrLevelsInADir[this.index].visible = true;
         }
       })
@@ -153,7 +151,7 @@ var PlaceUi = function (paraUi) {
   var rectSharetoGroup = ui.createRectangle(248, 158, 120, 40, '#99ff00');  rectSharetoGroup.parent = groupPassLevel;
       var textTemp = ui.createText('群友排行', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectSharetoGroup);
 
-  var rectPlayBack = ui.createRectangle(44, 534, 100, 40, 'white');  rectPlayBack.parent = groupPassLevel;
+  var rectPlayBack = ui.createRectangle(44, 534, 120, 40, 'white');  rectPlayBack.parent = groupPassLevel;
       var textTemp = ui.createText('精彩回放', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectPlayBack);
     rectPlayBack.onClick(function() {
       groupPlaying.visible = true;
@@ -174,13 +172,28 @@ var PlaceUi = function (paraUi) {
     });
 
   var rectSharetoFriend = ui.createRectangle(248, 534, 120, 40, '#99ff00');  rectSharetoFriend.parent = groupPassLevel;
-    var textTemp = ui.createText('挑战好友', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectSharetoFriend);
+    var textTemp = ui.createText('分享', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectSharetoFriend);
+    rectSharetoFriend.onClick(function() {
+      window.myCoins++
+    });
 
     
   var rectNext = ui.createRectangle(200, 585, 180, 50, 'white');  rectNext.parent = groupPassLevel;
       var textTemp = ui.createText('  下一关', 32, family, 'black', 0, 0);  setTextInRect(textTemp, rectNext);
       var temp = ui.createSprite('images/scroll_r.png',5, 5, 40, 40);  temp.parent = rectNext; 
       rectNext.onClick(function() {
+      var dirIndex, tmp;
+      [dirIndex, tmp] = window.getNextDirLevel()
+      if(window.subMyCoin(window.DirDiff[dirIndex]) === false){
+        console.log('no coins');
+
+        wx.showModal({
+          title: '解锁下一关需'+window.DirDiff[dirIndex]+'金币',
+          content: '分享给好友 +1 金币\r\n分享到群 +3 金币\r\n看视频 +5 金币',
+          showCancel: false,
+       })
+       return;
+      }
       groupPlaying.visible = true;
       ranking.visible = false
       groupPassLevel.visible = false;
@@ -249,11 +262,13 @@ var PlaceUi = function (paraUi) {
   }
 }
 //某个目录下的关卡
-/*async*/ function  createLevelsInADir(index)  {
-  // arrLevelsInADir  
-  // window.levelDirs[index]
+
+// async 
+function  createLevelsInADir(index)  {
   var fs = wx.getFileSystemManager();
-  var files = /*await*/ fs.readFileSync('levels/'+ window.levelDirs[index] +'/dir.txt', "ascii")
+  // var files = await fs.readFileSync
+  var files =  fs.readFileSync
+                ('levels/'+ window.levelDirs[index] +'/dir.txt', "ascii")
   files = files.replace(/\r/g, '').split('\n');  
   console.log(files)
 
@@ -268,8 +283,9 @@ var PlaceUi = function (paraUi) {
     // groupStart.visible = true;
   })
 
+  groupRectLevels.arrLevelUi = []
   var textDirName = ui.createText(window.levelDirs[index], 24, family, 'white', 70, 20); textDirName.setParent(groupLevels);
-  var row = 0, col = 0, cntArow = 4, startX = 30, startY = 60, w = 60, h = 40, padX = 30, padY = 20;
+  var row = 0, col = 0, cntArow = 4, startX = 50, startY = 60, w = 60, h = 40, padX = 30, padY = 20;
   for (var i = 0; i < files.length; ++i){
      if (files[i] === '') continue;
      row = Math.floor(i / cntArow);  col = i % cntArow;
@@ -278,17 +294,32 @@ var PlaceUi = function (paraUi) {
      rectLevel.setParent(groupLevels);
      
      var name = files[i].split('.');
-     var textTemp = ui.createText(name[0], 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectLevel);
+     var textTemp = ui.createText(name[0], 24, family, 'black', 0, 0);  setTextInRect_L(textTemp, rectLevel);
+    //  textTemp.setParent(rectLevel);
+
+     var textState = ui.createText('   ', 24, family, 'black', 0, 0);  setTextInRect_R(textState, rectLevel);
+    //  textState.setParent(rectLevel);
+
      rectLevel.dirIndex = index;  rectLevel.fileIndex = i;
      rectLevel.onClick(function() {
         this.parent.parent.visible = false;
         groupPlaying.visible = true;
         ui.dispatchEvent( { type: 'selectDirFile' , dirIndex: this.dirIndex, fileIndex: this.fileIndex} )
      })     
+
+     groupRectLevels.arrLevelUi.push(textState)
   }
-
+  setDirLevelState(index);
 }
-
+function setDirLevelState(dirIndex)
+{
+  for(var i = 0; i < arrLevelsInADir[dirIndex].arrLevelUi.length; ++i){
+    if (getLevelState(dirIndex, i) === 0)
+      arrLevelsInADir[dirIndex].arrLevelUi[i].text = '  -'          
+    else if (getLevelState(dirIndex, i) === 1)
+      arrLevelsInADir[dirIndex].arrLevelUi[i].text = '  √'
+  }  
+}
 function updateRanking() {
   console.log('updateRanking')
   rankingTexture.needsUpdate = true
@@ -305,6 +336,24 @@ function setTextTopRect(text, rect){
 
 function setTextInRect(text, rect){
   text.textAlign = 'center';
+  text.textBaseline = 'middle';
+  text.anchor.x = ThreeUI.anchors.center;
+  text.anchor.y = ThreeUI.anchors.center;
+  
+  text.setParent( rect);  
+}
+
+function setTextInRect_L(text, rect){
+  text.textAlign = 'right';
+  text.textBaseline = 'middle';
+  text.anchor.x = ThreeUI.anchors.center;
+  text.anchor.y = ThreeUI.anchors.center;
+  
+  text.setParent( rect);  
+}
+
+function setTextInRect_R(text, rect){
+  text.textAlign = 'left';
   text.textBaseline = 'middle';
   text.anchor.x = ThreeUI.anchors.center;
   text.anchor.y = ThreeUI.anchors.center;
