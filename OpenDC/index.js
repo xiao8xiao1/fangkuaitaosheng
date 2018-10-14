@@ -22,7 +22,7 @@ getUserInfo()
 //     keyList: ['score', 'maxScore'],
 // })
 
-let fakeDatas = []
+let fakedatas = []
 function fakeData(count){
     var item = new Object()
     myInfo.avatarUrl = 'images/suc.png'
@@ -36,9 +36,9 @@ function fakeData(count){
         item.nickname = '宏伟'+i
         // item.score 
         item.KVDataList = [{value:''+i}]
-        fakeDatas.push(item)
+        fakedatas.push(item)
     }
-    fakeDatas[4].nickname = '宏伟'
+    fakedatas[4].nickname = '宏伟'
 }
 
 // 初始化标题返回按钮等元素
@@ -72,10 +72,10 @@ function initFrame(type) {
     sharedCtx.fillRect(80, stY, 750 - 80 * 2, 650)
 
     // 排行榜提示
-    sharedCtx.fillStyle = '#8D8D8D'
-    sharedCtx.font = '20px Arial'
-    sharedCtx.textAlign = 'left'
-    sharedCtx.fillText('每周一凌晨刷新', 100, stY + 40)
+    // sharedCtx.fillStyle = '#8D8D8D'
+    // sharedCtx.font = '20px Arial'
+    // sharedCtx.textAlign = 'left'
+    // sharedCtx.fillText('每周一凌晨刷新', 100, stY + 40)
 
     // 自己排名外框
     sharedCtx.fillStyle = '#302F30'
@@ -132,9 +132,11 @@ function initRanklist (list, itemCanvasStartY) {
             itemCtx.font = 'bold 36px Arial'
             itemCtx.textAlign = 'right'
             itemCtx.fillText(item.score || 0, 550, index * itemHeight + 60)
-            itemCtx.font = 'italic 44px Arial'
-            itemCtx.textAlign = 'center'
-            itemCtx.fillText(index + 1, 46, index * itemHeight + 64)
+
+            // itemCtx.font = 'italic 44px Arial'
+            // itemCtx.textAlign = 'center'
+            // itemCtx.fillText(index + 1, 46, index * itemHeight + 64)
+            drawRankingNum(index, index * itemHeight, itemCanvasStartY)
         })
     } else {
         // 没有数据
@@ -142,6 +144,34 @@ function initRanklist (list, itemCanvasStartY) {
 
    reDrawItem(itemCanvasStartY)
 }
+
+/**
+ * 绘制名次
+ */
+function drawRankingNum(num, y, itemCanvasStartY) {
+    let image = wx.createImage()
+    image.onload = () => {
+      itemCtx.drawImage(image, 20, y + 20, 60, 60)
+      reDrawItem(itemCanvasStartY)
+    }
+    // 名次从0开始
+    switch (num) {
+      case 0:
+        image.src = 'images/first.jpg'
+        break
+      case 1:
+        image.src = 'images/second.jpg'
+        break
+      case 2:
+        image.src = 'images/third.jpg'
+        break
+      default:
+        itemCtx.font = 'italic 45px Arial'
+        itemCtx.textAlign = 'center'
+        itemCtx.fillText(num + 1, 46, y + 62)
+    }
+  }
+  
 
 // 绘制自己的排名
 function drawMyRank () {
@@ -159,11 +189,33 @@ function drawMyRank () {
         sharedCtx.textAlign = 'right'
         sharedCtx.fillText(myScore || 0, 630, stY + 670 + 76)
         // 自己的名次
-        if (myRank !== undefined) {
-            sharedCtx.font = 'italic 44px Arial'
+        // if (myRank !== undefined) {
+        //     sharedCtx.font = 'italic 44px Arial'
+        //     sharedCtx.textAlign = 'center'
+        //     sharedCtx.fillText(myRank + 1, 126, stY + 670 + 80)
+        // }
+        // 名次
+        let image = wx.createImage()
+        image.onload = () => {
+        sharedCtx.drawImage(image, 100, stY + 700, 60, 60)
+        }
+        // 名次从0开始
+        switch (myRank) {
+        case 0:
+            image.src = 'images/first.jpg'
+            break
+        case 1:
+            image.src = 'images/second.jpg'
+            break
+        case 2:
+            image.src = 'images/third.jpg'
+            break
+        default:
+            sharedCtx.fillStyle = '#FFFFFF'
+            sharedCtx.font = 'italic 45px Arial'
             sharedCtx.textAlign = 'center'
             sharedCtx.fillText(myRank + 1, 126, stY + 670 + 80)
-        }
+        }       
     }
     // sharedCtx.fillRect(40, 480, screenWidth - 40 * 2, 60)
 }
@@ -181,9 +233,11 @@ function sortByScore (data) {
     let array = []
     data.forEach(item => {
         var score = item['KVDataList'][0] && item['KVDataList'][0].value!='undefined' ? item['KVDataList'][0].value : 0;
-        if (item.nickname === myInfo.nickName && item.avatarUrl === myInfo.avatarUrl
-            && parseInt(myScore) > parseInt(score)){
-            score = myScore
+        if (item.nickname === myInfo.nickName && item.avatarUrl === myInfo.avatarUrl){
+            if (!myScore)
+                myScore = score            
+            else if (parseInt(myScore) > parseInt(score))
+                score = myScore
         }
         array.push({
             avatarUrl: item.avatarUrl,

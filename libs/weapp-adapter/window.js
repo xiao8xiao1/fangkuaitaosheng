@@ -1,8 +1,8 @@
 import Canvas from './Canvas'
 
-import CommonComputedStyle from './style/CommonComputedStyle'
-import getImageComputedStyle from './style/ImageComputedStyle'
-import getCanvasComputedStyle from './style/CanvasComputedStyle'
+// import CommonComputedStyle from './style/CommonComputedStyle'
+// import getImageComputedStyle from './style/ImageComputedStyle'
+// import getCanvasComputedStyle from './style/CanvasComputedStyle'
 import Event from './Event'
 
 export navigator from './navigator'
@@ -40,7 +40,7 @@ function getComputedStyle(dom) {
         return getImageComputedStyle(dom);
     }
 
-    return CommonComputedStyle;
+    // return CommonComputedStyle;
 }
 
 function scrollTo(x, y) {

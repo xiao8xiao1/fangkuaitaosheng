@@ -1,11 +1,11 @@
 // import * as THREE from '../three'
 var anchors = anchors||require('./anchors.js');
 var DisplayObject = DisplayObject||require('./DisplayObject.js');
-var BitmapText = BitmapText||require('./BitmapText.js');
+// var BitmapText = BitmapText||require('./BitmapText.js');
 var Rectangle = Rectangle||require('./Rectangle.js');
 var Sprite = Sprite||require('./Sprite.js');
 var Text = Text||require('./Text.js');
-var MvCvsSprite = MvCvsSprite||require('./MvCvsSprite.js');
+// var MvCvsSprite = MvCvsSprite||require('./MvCvsSprite.js');
 
 // All properties that when adjusted will force a redraw of the UI
 var dirtyProperties = ['x','y','width','height','rotation','alpha','visible','pivot','anchor','smoothing','stretch','offset','text','scale','parent','textAlign','assetPath','color','left','right','up','down','ActiveInvoke'];
@@ -229,13 +229,6 @@ ThreeUI.prototype.createGroup = function(x, y, width, height) {
 	observeDirtyProperties(displayObject, this);
 	return displayObject;	
 }
-
-ThreeUI.prototype.createMvCvsSprite = function(asset, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height) {
-	var displayObject = new MvCvsSprite(this, asset, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
-	this.displayObjects.push(displayObject);
-	observeDirtyProperties(displayObject, this);
-	return displayObject;	
-}
 /**
  * Create a new Text
  *
@@ -250,25 +243,6 @@ ThreeUI.prototype.createMvCvsSprite = function(asset, sourceX, sourceY, sourceWi
 
 ThreeUI.prototype.createText = function(text, size, font, color, x, y) {
 	var displayObject = new Text(this, text, size, font, color, x, y);
-	this.displayObjects.push(displayObject);
-	observeDirtyProperties(displayObject, this);
-	return displayObject;
-};
-
-/**
- * Create a new BitmapText
- *
- * @param {string} text
- * @param {string} font
- * @param {string} color
- * @param {int} x
- * @param {int} y
- *
- * @return {BitmapText}
- */
-
-ThreeUI.prototype.createBitmapText = function(text, size, x, y, sheetImagePath, sheetDataPath) {
-	var displayObject = new BitmapText(this, text, size, x, y, sheetImagePath, sheetDataPath);
 	this.displayObjects.push(displayObject);
 	observeDirtyProperties(displayObject, this);
 	return displayObject;

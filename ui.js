@@ -15,7 +15,7 @@ var groupStart, groupPlaying,  rankingTexture, ranking, rankingRetSprite, groupD
     textDirFile, groupPassLevel, groupTut, groupTut_01, coinsUi;
 
 window.bgColor = '#33ccff'
-var difficults = ['','[简单]', '[普通]', '[困难]', '[挑战]'];
+var difficults = ['','[小学]', '[初中]', '[高中]', '[本科]', '[博士]'];
 var colors = [['rgba(215, 219, 230, 1)', 'rgba(188, 190, 199, 1)'], 
               ['rgba(255, 231, 220, 1)', 'rgba(255, 196, 204, 1)'], 
               ['rgba(255, 224, 163, 1)', 'rgba(255, 202, 126, 1)'], 
@@ -25,7 +25,7 @@ var colors = [['rgba(215, 219, 230, 1)', 'rgba(188, 190, 199, 1)'],
               ['rgba(219, 235, 255, 1)', 'rgba(185, 213, 235, 1)'], 
               ['rgba(216, 218, 255, 1)', 'rgba(165, 176, 232, 1)'], 
               ];
-var arrLevelsInADir = []
+var arrLevelsInADir = [], arrLvPassedUi = []
 var ui ;
 // var mute;
 var PlaceUi = function (paraUi) {
@@ -37,7 +37,7 @@ var PlaceUi = function (paraUi) {
   groupStart = ui.createGroup(0, 0, uiWidth, uiHeight); 
     var bg = ui.createRectangle(0, 0, uiWidth, uiHeight, window.bgColor); 
     var gameName = ui.createText(
-      '方块逃生3D'
+      '小白逃生3D'
       ,40, family, 'black', 110, 154);
     gameName.textBaseline = 'top';  gameName.fontWeight = 'bold';
 
@@ -51,6 +51,11 @@ var PlaceUi = function (paraUi) {
       bg.visible = gameName.visible = rectBegin.visible = false;
     });      
 
+    var textTemp = ui.createText(
+      '抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当\n适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活'
+      , 14, family, 'black', 16, 530);
+    textTemp.parent = groupStart
+    
     var bg1 = ui.createRectangle(0, 630, 474, 136, window.bgColor);     
     bg1.parent = bg.parent = gameName.parent = rectBegin.parent = groupStart;
   }
@@ -87,7 +92,6 @@ var PlaceUi = function (paraUi) {
   }
   //Dirs
   {
-    
     groupDirs = ui.createGroup(0, 0, uiWidth, uiHeight);  groupDirs.visible = false;  groupDirs.isMov = true;
     var retSprite = ui.createSprite('images/return.png', 0, 0, 50,50);
     retSprite.setParent(groupDirs)
@@ -105,6 +109,10 @@ var PlaceUi = function (paraUi) {
 
       var textTemp = ui.createText(window.levelDirs[i], 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectLevelDir);
       var textTemp = ui.createText(difficults[window.DirDiff[i]], 18, family, 'black', 5, 5);  textTemp.setParent(rectLevelDir)
+      var total, passed;
+      [total, passed] = getDirPassInfo(i)
+      arrLvPassedUi[i] = ui.createText('['+passed, 20, family, 'black', 230, 20);  arrLvPassedUi[i].setParent(rectLevelDir)
+      var textTemp = ui.createText('/'+total+']', 20, family, 'black', 250, 20);  textTemp.setParent(rectLevelDir)
 
       rectLevelDir.index = i;
       rectLevelDir.onClick(function() {
@@ -131,6 +139,7 @@ var PlaceUi = function (paraUi) {
         groupPlaying.visible = false;
         // groupStart.visible = true;
         groupDirs.visible = true;
+        refreshPassed()
       });  
 
     textDirFile = ui.createText('', 20, family, 'black', 60, 25);
@@ -196,7 +205,7 @@ var PlaceUi = function (paraUi) {
       rectNext.onClick(function() {
       var dirIndex, tmp;
       [dirIndex, tmp] = window.getNextDirLevel()
-      if(window.checkAndSubMyCoin(window.DirDiff[dirIndex]) === false){
+      if(window.checkAndSubMyCoin(dirIndex, tmp) === false){
         console.log('no coins');
 
         wx.showModal({
@@ -217,9 +226,12 @@ var PlaceUi = function (paraUi) {
   //教程0
   {
     this.groupTut = groupTut = ui.createGroup(0, 0, uiWidth, uiHeight);  groupTut.visible = false;  
-      var rectTut1 = ui.createRectangle( 110, 70, 160, 80, '#43575F');  rectTut1.parent = groupTut;
-      var textTut1 = ui.createText('移开小色块\n\n救出小白块', 20, family, 'white', 0, 0);  
-      setTextTopRect(textTut1, rectTut1);
+      var rectTut1 = ui.createRectangle( 50, 120, 120, 40, '#43575F');  rectTut1.parent = groupTut;
+      var textTut1 = ui.createText('移开小色块', 20, family, 'white', 0, 0);  
+      setTextInRect(textTut1, rectTut1);
+      var rectTut1_1 = ui.createRectangle( 50, 160, 120, 40, '#43575F');  rectTut1_1.parent = groupTut;
+      var textTut1_1 = ui.createText('救出小白块', 20, family, 'white', 0, 0);  
+      setTextInRect(textTut1_1, rectTut1_1);
 
       var rectTut2 = ui.createRectangle( 38, 620, 140, 40, '#43575F');  rectTut2.parent = groupTut;
       var textTut2 = ui.createText('方块只能沿', 24, family, 'white', 0, 0);  
@@ -281,10 +293,14 @@ var PlaceUi = function (paraUi) {
 function  createLevelsInADir(index)  {
   var fs = wx.getFileSystemManager();
   // var files = await fs.readFileSync
+  try {
   var files =  fs.readFileSync
                 ('levels/'+ window.levelDirs[index] +'/dir.txt', "ascii")
   files = files.replace(/\r/g, '').split('\n');  
   console.log(files)
+  } catch(e){
+    files = [];
+  }
 
   var groupRectLevels = ui.createRectangle(0, 0, uiWidth, uiHeight, window.bgColor);    arrLevelsInADir[index] = groupRectLevels;
   var groupLevels = ui.createGroup(0, 0, uiWidth, uiHeight);  groupLevels.isMov = true;  groupLevels.isMov = true;
@@ -436,6 +452,7 @@ window.showPassLevel = function(score){
   var flag_uiRedraw = setInterval(function() {updateRanking()}, 500);
   setTimeout(function(){clearInterval(flag_uiRedraw);},5*1000)
   
+  coinsUi.text = ''+GetMyCoins()+' 金币'
   groupTut.visible = false;
   groupTut_01.visible = false;
   groupPlaying.visible = false;
@@ -443,5 +460,14 @@ window.showPassLevel = function(score){
   groupPassLevel.visible = true;
   // groupStart.visible = true;
 }
+
+function refreshPassed(){
+  var total, passed;
+  for (var i = 0; i < window.levelDirs.length; ++i){
+    [total, passed] = getDirPassInfo(i)
+    arrLvPassedUi[i].text = '['+passed
+  }
+}
+
 module.exports = PlaceUi;
 // window.placeUi = placeUi;

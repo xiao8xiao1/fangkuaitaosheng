@@ -29,11 +29,12 @@ AssetLoader.add.image('images/r.png');
 
 AssetLoader.load(main);
 
-window.levelDirs = ['帮助','双鱼座','水瓶座','白羊座','金牛座','双子座','巨蟹座','狮子座','处女座','天秤座','天蝎座','射手座','魔羯座']
-window.DirDiff = [1,1,2,2,2,2,3,3,3,4,4,4,4]
+window.levelDirs = ['帮助','1水瓶座','2双鱼座','3白羊座','4金牛座','5双子座','6巨蟹座','7狮子座','8处女座','9天秤座','A天蝎座','B射手座','C魔羯座']
+window.DirDiff = [1,1,2,1,2,2,3,3,3,4,4,4,5]
 
 
 var camera, scene, controls, renderer, ui, placeUi, initMouseMov;
+var movDirPic;
 var bgPlane = null;
 var rooms = [];
 var groups = [];
@@ -63,7 +64,7 @@ var colorGroup = 0x00f000;
 var fallSound = wx.createInnerAudioContext();  fallSound.src = 'audio/bullet.mp3';
 var colSound = fallSound; // var colSound = new Audio('audio/ding.mp3');
 var colNoMovSound = wx.createInnerAudioContext(); colNoMovSound.src = 'audio/ding.mp3';  //'audio/colnomov.mp3';
-var winSound = wx.createInnerAudioContext(); winSound.src = 'audio/level_complete.wav';
+var winSound = wx.createInnerAudioContext(); winSound.src = 'audio/level_complete.mp3';
 // var groundSound = new Audio('audio/fall_2.mp3');
 // groundSound.loop = true
 // groundSound.play()
@@ -89,7 +90,8 @@ function main(){
   // ui.addEventListener ('home', removeCubes);  
   ui.addEventListener ('selectDirFile', function(e){
     currentDirIndex = e.dirIndex;  currentFileIndex = e.fileIndex;
-    setDirLevel(currentDirIndex, currentFileIndex, 0)
+    if (getDirLevel(currentDirIndex, currentFileIndex) === null)
+      setDirLevel(currentDirIndex, currentFileIndex, 0)
     removeCubes()
     arrMovStepRec = [];
     initCubes()
@@ -268,10 +270,14 @@ function initLvStates(){
     levelStateArrArr = lv;
   }
   levelDirs.forEach(function(dirName, index){
+    try {
     var files = fs.readFileSync
       ('levels/'+dirName+'/dir.txt', "ascii");
     files = files.replace(/\r/g, '').split('\n');
     files.length --;
+    } catch(e){
+      files = [];
+    }
     levelStateArrArr[index].length = files.length;
   })  
 }
@@ -280,18 +286,18 @@ function saveLvStates(){
   fs.writeFileSync(`${wx.env.USER_DATA_PATH}/lvStates.txt`,lv_string,"ascii")
 }
 
-function getDirLevel(){
-  var dirIndex = 0, levelIndex = 0;
-  try
-  {
-    var DirLevel = fs.readFileSync(`${wx.env.USER_DATA_PATH}/level.txt`,"ascii").split(',')
-    var dirIndex = Number(DirLevel[0]);  var levelIndex = Number(DirLevel[1]);
+function getDirLevel(dirIndex, levelIndex){
+  return levelStateArrArr[dirIndex][levelIndex];
+}
+
+window.getDirPassInfo = function (dirIndex){
+  var total = levelStateArrArr[dirIndex].length
+  var passed = 0;
+  for (var j = 0; j < total; ++j){
+    if (levelStateArrArr[dirIndex][j] === 1)
+      passed++;
   }
-  catch(errMsg)
-  {
-    console.log(errMsg)
-  }
-  return [dirIndex, levelIndex];
+  return [total, passed]
 }
 
 function getFirstDirLevel(){
@@ -324,7 +330,7 @@ window.GetMyCoins = function(){
     var ret = fs.readFileSync(`${wx.env.USER_DATA_PATH}/coins.txt`,"ascii")
   }
   catch(errMsg){
-    ret = 0;
+    ret = 20;
   }
   return parseInt(ret);
 }
@@ -333,7 +339,10 @@ window.SetMyCoins = function(val){
   fs.writeFileSync(`${wx.env.USER_DATA_PATH}/coins.txt`,''+val,"ascii")
 }
 
-window.checkAndSubMyCoin = function (coins){
+window.checkAndSubMyCoin = function (dirIndex, fileIndex){
+  if (levelStateArrArr[dirIndex][fileIndex] === 1)
+    return true;
+  var coins = window.DirDiff[dirIndex]
   var myCoins = GetMyCoins()
   if (myCoins >= coins){
     myCoins -= coins;
@@ -383,7 +392,15 @@ function init() {
 
   var axesHelper = new THREE.AxesHelper(400);
   scene.add(axesHelper);
-  
+  var lenPic = 160
+  movDirPic = new THREE.Mesh( new THREE.CylinderBufferGeometry( 3, 3, lenPic, 12 ), new THREE.MeshNormalMaterial());
+  var arrow1 = new THREE.Mesh( new THREE.CylinderBufferGeometry( 1, 15, 50, 12 ), new THREE.MeshNormalMaterial());
+  movDirPic.add(arrow1);   arrow1.position.y = lenPic/2
+  var arrow2 = new THREE.Mesh( new THREE.CylinderBufferGeometry( 15, 1, 50, 12 ), new THREE.MeshNormalMaterial());
+  movDirPic.add(arrow2);   arrow2.position.y = -lenPic/2
+  movDirPic.visible = false;
+  camera.add(movDirPic)
+
   initLight()
 
   initMouseMov = new InitMouseMov(renderer, scene, camera, groups, placeUi.groupPlaying);
@@ -519,10 +536,14 @@ function initCubes(funcPlayBack)
   if (currentDirIndex > window.levelDirs.length)
     currentFileIndex = 0;
   // var files = await fs.readFileSync
+  try{
   var files = fs.readFileSync
       ('levels/'+window.levelDirs[currentDirIndex]+'/dir.txt', "ascii");
   files = files.replace(/\r/g, '').split('\n');
   files.length--;
+  } catch(e){
+    files = [];
+  }
   if (currentFileIndex >= files.length)
     currentFileIndex = 0;  
 
@@ -555,7 +576,8 @@ function initCubes(funcPlayBack)
   controls.update();
 
   moveLight(midP, camDisdance)
-
+  movDirPic.position.set(0, h/2-100, -100)
+  movDirPic.visible = false;
   //room
   var geometry = new THREE.BoxGeometry(cubeCntX * cubeLen, cubeCntY * cubeLen, cubeCntZ * cubeLen);
   roomEdges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry),
@@ -781,6 +803,25 @@ Group.prototype.onPointerDown = function () {
   this.material.color.getHSL(savedHsl);
   this.material.color.setHSL(savedHsl.h, 0.8, 0.8)
   this.edges.material.linewidth = 10;
+
+  camera.matrixWorld
+  var q = new THREE.Quaternion();
+  var qcr = new THREE.Quaternion();
+  var matrix4 = new THREE.Matrix4();
+  matrix4.getInverse(camera.matrixWorld)  
+  qcr.setFromRotationMatrix (matrix4);
+  var wDir = this.getGroupDir()
+
+
+  if (wDir.z === 1)
+    wDir.set(1,0,0)
+  else if (wDir.x === 1)
+    wDir.set(0,0,1)
+  var wq = new THREE.Quaternion();
+  wq.setFromAxisAngle(wDir, Math.PI/2)
+  movDirPic.quaternion.multiplyQuaternions (qcr, wq)
+  movDirPic.visible = true;
+
 }
 
 Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
@@ -795,8 +836,12 @@ Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
     nowEndVec3.add(movedSteps);
     if (this.lady === true && nowEndVec3.z >= cubeCntZ) {
       winSound.play();
-      setDirLevel(currentDirIndex, currentFileIndex, 1)
-      window.showPassLevel(1);
+      var score = 0;
+      if ( getDirLevel(currentDirIndex, currentFileIndex) !== 1){
+        setDirLevel(currentDirIndex, currentFileIndex, 1)
+        score = 1
+      }
+      window.showPassLevel(score);
     }
     else {
       setRoomsOccupied(this.start, this.end, false);
@@ -806,6 +851,7 @@ Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
       this.position.copy(selectMeshInitPos).add(movedSteps.multiplyScalar(cubeLen));
     }
   }
+  movDirPic.visible = false;
 }
 
 // Group.prototype = Object.assign( Object.create( THREE.Mesh.prototype ), {
