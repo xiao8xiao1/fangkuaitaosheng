@@ -4,35 +4,47 @@ let ratio = wx.getSystemInfoSync().pixelRatio
 
 let sharedCtx = wx.getSharedCanvas().getContext('2d')
 console.log(wx.getSystemInfoSync())
-console.log(sharedCtx.width, sharedCtx.height, ratio)
+console.log('open sharedCtx', wx.getSharedCanvas().width, wx.getSharedCanvas().height, ratio)
+sharedCtx.scale(1, 1)
+sharedCtx.save()
+
 let itemCanvas = wx.createCanvas()
 let itemCtx = itemCanvas.getContext('2d')
 let myScore = undefined
 let myInfo = {}
 let myRank = undefined
+// let stY = 290
+let stY = 120 * (750/736) * (screenHeight/screenWidth)
 
-let datas = []
+getUserInfo()
+
+// wx.removeUserCloudStorage({
+//     keyList: ['score', 'maxScore'],
+// })
+
+let fakeDatas = []
 function fakeData(count){
     var item = new Object()
     myInfo.avatarUrl = 'images/suc.png'
-    myInfo.nickName = '宏伟'+4
-    myScore = myInfo.score = 100
+    myInfo.nickName = '宏伟'
+    myScore = '100'
     myRank = 4
     for (var i = 0; i < count;  ++i){
         var item = new Object()
         item.avatarUrl = 'images/suc.png'        
         if (i === 1)  item.avatarUrl = 'images/suc1.png'
         item.nickname = '宏伟'+i
-        item.score = ''+i
-        datas.push(item)
+        // item.score 
+        item.KVDataList = [{value:''+i}]
+        fakeDatas.push(item)
     }
+    fakeDatas[4].nickname = '宏伟'
 }
-getUserInfo()
-initFrame()
+
 // 初始化标题返回按钮等元素
-function initFrame() {
+function initFrame(type) {
     sharedCtx.restore()
-    sharedCtx.save()   
+    sharedCtx.save()
 
     sharedCtx.clearRect(0, 0, screenWidth * ratio, screenHeight * ratio)
 
@@ -48,21 +60,26 @@ function initFrame() {
     sharedCtx.fillStyle = '#fff'
     sharedCtx.font = 'bold 50px Arial'
     sharedCtx.textAlign = 'center'
-    sharedCtx.fillText('好友排行榜', 750 / 2, 220);
+    if (type === undefined)
+        sharedCtx.fillText('通关', 750 / 2, stY - 20);
+    else if (type === 1) 
+        sharedCtx.fillText('好友排行榜', 750 / 2, stY - 20);
+    else if (type === 2) 
+        sharedCtx.fillText('群友排行榜', 750 / 2, stY - 20);        
 
     // 排名列表外框
     sharedCtx.fillStyle = '#302F30'
-    sharedCtx.fillRect(80, 290, 750 - 80 * 2, 650)
+    sharedCtx.fillRect(80, stY, 750 - 80 * 2, 650)
 
     // 排行榜提示
     sharedCtx.fillStyle = '#8D8D8D'
     sharedCtx.font = '20px Arial'
     sharedCtx.textAlign = 'left'
-    sharedCtx.fillText('每周一凌晨刷新', 100, 330)
+    sharedCtx.fillText('每周一凌晨刷新', 100, stY + 40)
 
     // 自己排名外框
     sharedCtx.fillStyle = '#302F30'
-    sharedCtx.fillRect(80, 960, 750 - 80 * 2, 120)
+    sharedCtx.fillRect(80, stY + 670, 750 - 80 * 2, 120)
 
     // // 返回按钮
     // let returnImage = wx.createImage()
@@ -106,7 +123,7 @@ function initRanklist (list, itemCanvasStartY) {
             }
             avatar.onerror = function() {
                 if (--listLength === 0)
-                    reDrawItem(itemCanvasStartY)                
+                    reDrawItem(itemCanvasStartY)
             }
             itemCtx.fillStyle = '#fff'
             itemCtx.font = '28px Arial'
@@ -132,48 +149,58 @@ function drawMyRank () {
         let avatar = wx.createImage()
         avatar.src = myInfo.avatarUrl
         avatar.onload = function() {
-            sharedCtx.drawImage(avatar, 180, 960 + 24, 70, 70)
+            sharedCtx.drawImage(avatar, 180, stY + 670 + 24, 70, 70)
         }
         sharedCtx.fillStyle = '#fff'
         sharedCtx.font = '28px Arial'
         sharedCtx.textAlign = 'left'
-        sharedCtx.fillText(myInfo.nickName, 270, 960 + 72)
+        sharedCtx.fillText(myInfo.nickName, 270, stY + 670 + 72)
         sharedCtx.font = 'bold 36px Arial'
         sharedCtx.textAlign = 'right'
-        sharedCtx.fillText(myScore || 0, 630, 960 + 76)
+        sharedCtx.fillText(myScore || 0, 630, stY + 670 + 76)
         // 自己的名次
         if (myRank !== undefined) {
             sharedCtx.font = 'italic 44px Arial'
             sharedCtx.textAlign = 'center'
-            sharedCtx.fillText(myRank + 1, 126, 960 + 80)
+            sharedCtx.fillText(myRank + 1, 126, stY + 670 + 80)
         }
     }
     // sharedCtx.fillRect(40, 480, screenWidth - 40 * 2, 60)
 }
 // 因为头像绘制异步的问题，需要重新绘制
 function reDrawItem(y) {
-    console.log('reDrawItem', y)
-    sharedCtx.clearRect(80, 350, 750 - 80 * 2, 590)
+    // console.log('reDrawItem', y)
+    sharedCtx.clearRect(80, stY + 60, 750 - 80 * 2, 590)
     sharedCtx.fillStyle = '#302F30'
-    sharedCtx.fillRect(80, 350, 750 - 80 * 2, 590)
-    sharedCtx.drawImage(itemCanvas, 0, y, 750 - 80 * 2, 590, 80, 350, 750 - 80 * 2, 590)
+    sharedCtx.fillRect(80, stY + 60, 750 - 80 * 2, 590)
+    sharedCtx.drawImage(itemCanvas, 0, y, 750 - 80 * 2, 590, 80, stY + 60, 750 - 80 * 2, 590)
     //
     // sharedCtx.drawImage(itemCanvas, 40, y+175, screenWidth - 40 * 2, 295)
 }
 function sortByScore (data) {
     let array = []
-    data.map(item => {
-
+    data.forEach(item => {
+        var score = item['KVDataList'][0] && item['KVDataList'][0].value!='undefined' ? item['KVDataList'][0].value : 0;
+        if (item.nickname === myInfo.nickName && item.avatarUrl === myInfo.avatarUrl
+            && parseInt(myScore) > parseInt(score)){
+            score = myScore
+        }
         array.push({
             avatarUrl: item.avatarUrl,
             nickname: item.nickname,
             openid: item.openid,
-            score: item['KVDataList'][0] && item['KVDataList'][0].value!='undefined' ? item['KVDataList'][0].value : 0 // 取最高分
+            score: score
         })
 
     })
     array.sort((a, b) => {
-        return a['score'] < b['score']
+        var ia = parseInt(a['score']), ib = parseInt(b['score'])
+        if (ia < ib)
+            return 1;
+        else if (ia > ib)
+            return -1;
+        else
+            return 0;        
     })
     myRank = array.findIndex((item) => {
        return item.nickname === myInfo.nickName && item.avatarUrl === myInfo.avatarUrl
@@ -191,6 +218,7 @@ function getUserInfo() {
         success: res => {
             console.log(res)
             myInfo = res.data[0]
+            // fakeData(20)
         },
         fail: res => {
 
@@ -199,24 +227,24 @@ function getUserInfo() {
 }
 
 // 获取自己的分数
-function getAndSetMyScore (score) {
+function getAndSetMyScore (addScore) {
     wx.getUserCloudStorage({
         keyList: ['score'],
         success: res => {
             let data = res
-            console.log(data)
-            var myScore = 0
+            var score = 0
             if (data.KVDataList[0])
-                myScore = parseInt(data.KVDataList[0].value)
-            myScore += parseInt(score)
-            saveMyScore(myScore)
+                score = parseInt(data.KVDataList[0].value)
+            score += parseInt(addScore)
+            saveMyScore(score)
         }
     })
 }
 
-function saveMyScore(myScore) {
+function saveMyScore(score) {
+    myScore = score
     wx.setUserCloudStorage({
-        KVDataList: [{ 'key': 'score', 'value': (''+myScore) }],
+        KVDataList: [{ 'key': 'score', 'value': (''+score) }],
         success: res => {
             console.log(res)
         },
@@ -228,11 +256,11 @@ function saveMyScore(myScore) {
 
 function getAndDrawFriendsRanking () {
   wx.getFriendCloudStorage({
-    keyList: ['score', 'maxScore'],
+    keyList: ['score'],
     success: res => {
-        let data = res.data
-        console.log(res.data)
-        initRanklist(sortByScore(data))
+        let datas = res.data
+        initFrame(1)
+        initRanklist(sortByScore(datas), 0)
         drawMyRank()
     },
     fail: res => {
@@ -246,61 +274,51 @@ function getAndDrawMe () {
   wx.getFriendCloudStorage({
     keyList: ['score'],
     success: res => {
-        let data = res.data
-        console.log(res.data)
-        var sortedData = sortByScore(data)
-        initRanklist(sortedData, (myRank-2)*itemHeight)
+        let datas = res.data
+        initFrame()
+        initRanklist(sortByScore(datas), (myRank-2)*itemHeight)
+        console.log('getAndDrawMe', res)
     },
     fail: res => {
-        console.log('getFriendsRanking:fail')
-        console.log(res.data)
+        console.log('getAndDrawMe fail', res)
     }    
   })
 }
   
 
 function getGroupRanking (ticket) {
+    console.log('getGroupRanking', ticket)
     wx.getGroupCloudStorage({
         shareTicket: ticket,
-        keyList: ['score', 'maxScore'],
+        keyList: ['score'],
         success: res => {
-            console.log('getGroupCloudStorage:success')
-            console.log(res.data)
-            let data = res.data
-            initRanklist(sortByScore(data))
+            let datas = res.data
+            initFrame(2)
+            initRanklist(sortByScore(datas))
             drawMyRank()
         },
         fail: res => {
-            console.log('getGroupCloudStorage:fail')
-            console.log(res.data)
+            console.log('getGroupCloudStorage fail', res)
         }
     })
 }
 // getGroupRanking()
 wx.onMessage(data => {
+    console.log('index>', data)    
     if (data.type === 'friends') {
-        // getFriendsRanking()
-        // getMyScore()
-        
-        initFrame()
-        fakeData(20)
-        var y = 3*itemHeight
-        initRanklist(datas, y)
-        // getMyScore()
-        drawMyRank()
-
-        // show = true
+        getAndDrawFriendsRanking()
+        show = true
     } else if(data.type === 'aboutMe'){
-        console.log('aboutMe')
-        getAndSetMyScore(data.score)
+        console.log('aboutMe', data.score)
+        if (data.score)
+            getAndSetMyScore(data.score)
         getAndDrawMe()
     } else if (data.type === 'group') {
         getGroupRanking(data.text)
-        getMyScore()
+        show = true
     } else if (data.type === 'updateMaxScore') {
         // 更新最高分
         console.log('更新最高分')
-        getMyScore()
     } else if (data.type === 'stopShow') {
         // wx.offTouchMove(onMoveRank)
         // wx.offTouchEnd(onUpRank)

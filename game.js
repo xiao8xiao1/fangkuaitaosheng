@@ -29,7 +29,7 @@ AssetLoader.add.image('images/r.png');
 
 AssetLoader.load(main);
 
-window.levelDirs = ['帮助','水瓶座','双鱼座','白羊座','金牛座','双子座','巨蟹座','狮子座','处女座','天秤座','天蝎座','射手座','魔羯座']
+window.levelDirs = ['帮助','双鱼座','水瓶座','白羊座','金牛座','双子座','巨蟹座','狮子座','处女座','天秤座','天蝎座','射手座','魔羯座']
 window.DirDiff = [1,1,2,2,2,2,3,3,3,4,4,4,4]
 
 
@@ -45,8 +45,8 @@ var msheOpas = [];
 
 var fs = wx.getFileSystemManager();
 
-window.currentDirIndex = 0;
-window.currentFileIndex = 0;
+var currentDirIndex = 0;
+var currentFileIndex = 0;
 var globleDef_string ;var globleDef ;
 var groupsDef ;
 var cubeCntX ;
@@ -68,39 +68,28 @@ var winSound = wx.createInnerAudioContext(); winSound.src = 'audio/level_complet
 // groundSound.loop = true
 // groundSound.play()
 
-wx.showShareMenu()
+window.gShareTicket = undefined
+wx.onShow(res => {
+  if (res.shareTicket)
+    window.gShareTicket = res.shareTicket;
+  console.log('onshow gShareTicket',window.gShareTicket)
+});
+
+wx.showShareMenu({withShareTicket: true});
 wx.onShareAppMessage(function () {
-  console.log('shared')
   // 用户点击了“转发”按钮
-  return {
-    title: '转发标题'
-  }
-})  
+  return shareMsg;
+})
 
 function main(){
-  // wx.authorize({scope: 'scope.getUserInfo'})  
-  // wx.login({
-  //   success: function () {
-  //     wx.getUserInfo()
-  //   }
-  // })  
-  // var button = wx.createUserInfoButton(
-  //   { type: 'text' , 
-  //   text: '获取用户信息' , 
-  //   style: { left: 10 , top: 76 , width: 200 , height: 40 , lineHeight: 40 , backgroundColor: '#ff0000' , color: '#ffffff' , textAlign: 'center' , fontSize: 16 , borderRadius: 4 } 
-  //   }) 
-  //   button.onTap(
-  //     (res) => { console.log(res) ;button.hide()}
-      
-  //   )
-  [window.currentDirIndex, window.currentFileIndex] = getFirstDirLevel();
+  [currentDirIndex, currentFileIndex] = getFirstDirLevel();
   init();
   // initCubes();
   ui.addEventListener ('start', function(e) {initCubes();});
   // ui.addEventListener ('home', removeCubes);  
   ui.addEventListener ('selectDirFile', function(e){
-    window.currentDirIndex = e.dirIndex;  window.currentFileIndex = e.fileIndex;
-    setDirLevel(window.currentDirIndex, window.currentFileIndex, 0)
+    currentDirIndex = e.dirIndex;  currentFileIndex = e.fileIndex;
+    setDirLevel(currentDirIndex, currentFileIndex, 0)
     removeCubes()
     arrMovStepRec = [];
     initCubes()
@@ -250,7 +239,46 @@ function animate() {
   ui.render(renderer);
 }
 
-window.levelStateArrArr = [[],[],[],[],[],[],[],[],[],[],[],[]]
+window.levelStateArrArr = [[],[],[],[],[],[],[],[],[],[],[],[],[]]
+
+function initLvStates(){
+  var isFileOk = true;
+  try{
+    var lv_string = fs.readFileSync(`${wx.env.USER_DATA_PATH}/lvStates.txt`,"ascii")
+    var lv = JSON.parse(lv_string)
+    if (lv instanceof Array){
+      for (var i = 0; i < lv.length; ++i){
+        if (lv[i] instanceof Array == false){
+          isFileOk = false;
+          break;
+        }
+      };
+    } else{
+      isFileOk = false;
+    }
+  }
+  catch(errMsg)
+  {
+    console.log(errMsg)
+    isFileOk = false;
+  }
+
+  if (isFileOk){
+    console.log('lvStates.txt ok', lv)
+    levelStateArrArr = lv;
+  }
+  levelDirs.forEach(function(dirName, index){
+    var files = fs.readFileSync
+      ('levels/'+dirName+'/dir.txt', "ascii");
+    files = files.replace(/\r/g, '').split('\n');
+    files.length --;
+    levelStateArrArr[index].length = files.length;
+  })  
+}
+function saveLvStates(){
+  var lv_string = JSON.stringify(levelStateArrArr);
+  fs.writeFileSync(`${wx.env.USER_DATA_PATH}/lvStates.txt`,lv_string,"ascii")
+}
 
 function getDirLevel(){
   var dirIndex = 0, levelIndex = 0;
@@ -267,9 +295,12 @@ function getDirLevel(){
 }
 
 function getFirstDirLevel(){
+  initLvStates()
   for (var i = 0; i < levelStateArrArr.length; ++i){
-    for (var j = 0; j < levelStateArrArr[i].length; ++i){
-      if (!levelStateArrArr[i][j]){
+    // if (levelStateArrArr[i].length === 0)
+    //   return [i, 0];
+    for (var j = 0; j < levelStateArrArr[i].length; ++j){
+      if (levelStateArrArr[i][j] !== 1){
         return [i, j];
       }
     }
@@ -278,59 +309,54 @@ function getFirstDirLevel(){
 }
 
 function setDirLevel(dirIndex, fileIndex, passed){
-  var text = ''+dirIndex+','+fileIndex
-  try
-  {
-    fs.writeFileSync(`${wx.env.USER_DATA_PATH}/level.txt`,text,"ascii")
-  }
-  catch(errMsg)
-  {
-    console.log(errMsg)
-  }
   levelStateArrArr[dirIndex][fileIndex] = passed;
+  saveLvStates();
 }
 
 window.getLevelState = function (dirIndex, fileIndex){
   if(!levelStateArrArr[dirIndex])
-    return undefined;
+    return null;
   return levelStateArrArr[dirIndex][fileIndex];
 }
 
-window.myCoins = 0;
-window.subMyCoin = function (coins){
+window.GetMyCoins = function(){
+  try{
+    var ret = fs.readFileSync(`${wx.env.USER_DATA_PATH}/coins.txt`,"ascii")
+  }
+  catch(errMsg){
+    ret = 0;
+  }
+  return parseInt(ret);
+}
+
+window.SetMyCoins = function(val){
+  fs.writeFileSync(`${wx.env.USER_DATA_PATH}/coins.txt`,''+val,"ascii")
+}
+
+window.checkAndSubMyCoin = function (coins){
+  var myCoins = GetMyCoins()
   if (myCoins >= coins){
     myCoins -= coins;
+    SetMyCoins(myCoins)
     return true;
   }
   return false;
 }
 
 window.getNextDirLevel = function (){
-  // var files = async fs.readFileSync
-  var files = fs.readFileSync
-      ('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii");
-  files = files.replace(/\r/g, '').split('\n');
-  files.length --;
-  // var files = []; files.length = 64;
-  var tmpDirIndex, tmpFileIndex;
-  if (window.currentFileIndex + 1 < files.length){
-    tmpDirIndex = window.currentDirIndex
-    tmpFileIndex = window.currentFileIndex+1
+  for (var i = currentDirIndex; i < levelStateArrArr.length; ++i){
+    for (var j = currentFileIndex+1; j < levelStateArrArr[i].length; ++j){
+      if (levelStateArrArr[i][j] !== 1){
+        return [i, j];
+      }
+    }
   }
-  else if (window.currentDirIndex + 1 < window.levelDirs.length){
-    tmpDirIndex = window.currentDirIndex+1;
-    tmpFileIndex = 0;
-  }
-  else{
-    console.log('pass all levels')
-    tmpDirIndex = 0
-    tmpFileIndex = 0
-  }
-  return [tmpDirIndex, tmpFileIndex];
+  return [0,0]
 }
+
 function passDirLevel(){
-  [window.currentDirIndex, window.currentFileIndex] = getNextDirLevel();
-  setDirLevel(window.currentDirIndex, window.currentFileIndex, 0)  
+  [currentDirIndex, currentFileIndex] = getNextDirLevel();
+  setDirLevel(currentDirIndex, currentFileIndex, 0)        
 }
 
 function init() {
@@ -490,21 +516,21 @@ function removeCubes(){
 // async 
 function initCubes(funcPlayBack)
 {
-  if (window.currentDirIndex > window.levelDirs.length)
-    window.currentFileIndex = 0;
+  if (currentDirIndex > window.levelDirs.length)
+    currentFileIndex = 0;
   // var files = await fs.readFileSync
   var files = fs.readFileSync
-      ('levels/'+window.levelDirs[window.currentDirIndex]+'/dir.txt', "ascii");
+      ('levels/'+window.levelDirs[currentDirIndex]+'/dir.txt', "ascii");
   files = files.replace(/\r/g, '').split('\n');
   files.length--;
-  if (window.currentFileIndex >= files.length)
-    window.currentFileIndex = 0;  
+  if (currentFileIndex >= files.length)
+    currentFileIndex = 0;  
 
   // globleDef_string = await fs.readFileSync
   globleDef_string = fs.readFileSync  
-      ('levels/'+window.levelDirs[window.currentDirIndex]+'/'+files[window.currentFileIndex], "ascii");
-  var temp = files[window.currentFileIndex].split(".");
-  window.setUiDirFile(window.levelDirs[window.currentDirIndex] +' : '+ temp[0])
+      ('levels/'+window.levelDirs[currentDirIndex]+'/'+files[currentFileIndex], "ascii");
+  var temp = files[currentFileIndex].split(".");
+  window.setUiDirFile(window.levelDirs[currentDirIndex] +' : '+ temp[0])
   globleDef = JSON.parse(globleDef_string);  groupsDef = globleDef.groupsDef;
   cubeCntX = new Number(globleDef.cubeCntX);
   cubeCntY = new Number(globleDef.cubeCntY);
@@ -520,7 +546,7 @@ function initCubes(funcPlayBack)
   camera.lookAt(midP.x, midP.y, midP.z);
   camera.updateProjectionMatrix()
 
-  var index = window.currentFileIndex % placeUi.colors.length;
+  var index = currentFileIndex % placeUi.colors.length;
   camera.remove(bgPlane)
   bgPlane = creatGradPlane(0,0, -1500, w, h, [[0,placeUi.colors[index][0]], [1,placeUi.colors[index][1]]])
   camera.add(bgPlane);  
@@ -533,7 +559,7 @@ function initCubes(funcPlayBack)
   //room
   var geometry = new THREE.BoxGeometry(cubeCntX * cubeLen, cubeCntY * cubeLen, cubeCntZ * cubeLen);
   roomEdges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry),
-                                     new THREE.LineBasicMaterial({ color: 0xf0f0f0, linewidth: 10 }));
+                                     new THREE.LineBasicMaterial({ color: 0xf0f0f0, linewidth: 1 }));
   // var material = new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity : 1 });
   // var geometry = new THREE.BoxGeometry(cubeCntX * cubeLen, cubeCntY * cubeLen, cubeCntZ * cubeLen);
   // var roomEdges = new THREE.Mesh(geometry, material);  
@@ -585,11 +611,11 @@ function initCubes(funcPlayBack)
     fallTweens[fallTweens.length-1].onComplete(function(){
       playBack();
     })
-  else if (window.currentDirIndex === 0){
+  else if (currentDirIndex === 0){
     fallTweens[fallTweens.length-1].onComplete(function(){
-      if (window.currentFileIndex === 0) 
+      if (currentFileIndex === 0) 
         initTut_0();
-      else if (window.currentFileIndex === 1) 
+      else if (currentFileIndex === 1) 
         initTut_1();    
     })    
   }
@@ -769,7 +795,7 @@ Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
     nowEndVec3.add(movedSteps);
     if (this.lady === true && nowEndVec3.z >= cubeCntZ) {
       winSound.play();
-      setDirLevel(window.currentDirIndex, window.currentFileIndex, 1)
+      setDirLevel(currentDirIndex, currentFileIndex, 1)
       window.showPassLevel(1);
     }
     else {

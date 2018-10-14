@@ -11,7 +11,8 @@ sharedCanvas.height = window.innerHeight * wx.getSystemInfoSync().pixelRatio;
 let uiWidth = 414
 let uiHeight= 736
 var family = 'Helvetica';//wx.loadFont('images/num.ttf');
-var groupStart, groupPlaying,  rankingTexture, ranking, rankingRetSprite, groupDirs, textDirFile, groupPassLevel, groupTut, groupTut_01;
+var groupStart, groupPlaying,  rankingTexture, ranking, rankingRetSprite, groupDirs, 
+    textDirFile, groupPassLevel, groupTut, groupTut_01, coinsUi;
 
 window.bgColor = '#33ccff'
 var difficults = ['','[简单]', '[普通]', '[困难]', '[挑战]'];
@@ -144,13 +145,26 @@ var PlaceUi = function (paraUi) {
     
   groupPassLevel = ui.createGroup(0, 0, uiWidth, uiHeight);  groupPassLevel.visible = false;
 
-  var rectAllRank = ui.createRectangle(44, 158, 100, 40, 'white');  rectAllRank.parent = groupPassLevel;
+  var rectAllRank = ui.createRectangle(44, 120, 120, 40, 'white');  rectAllRank.parent = groupPassLevel;
       var textTemp = ui.createText('全部排行', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectAllRank);
-    rectAllRank.onClick(showRank)      
+    rectAllRank.onClick(showRank)
 
-  var rectSharetoGroup = ui.createRectangle(248, 158, 120, 40, '#99ff00');  rectSharetoGroup.parent = groupPassLevel;
-      var textTemp = ui.createText('群友排行', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectSharetoGroup);
-
+  coinsUi = ui.createText(''+GetMyCoins()+' 金币', 20, family, 'white', 300, 80);  coinsUi.parent = groupPassLevel;
+  var rectSharetoGroup = ui.createRectangle(248, 120, 120, 40, '#99ff00');  rectSharetoGroup.parent = groupPassLevel;
+      var textTemp = ui.createText('群排行', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectSharetoGroup);
+    rectSharetoGroup.onClick(function(){
+      if (gShareTicket){
+        console.log('showRank', gShareTicket)
+        showRank.bind(this)(gShareTicket)
+      }
+      else
+        wx.showModal({
+          title: '查看群友排行',
+          content: '分享到指定群\r\n点击群内游戏卡片\r\n',
+          success: shareApp
+        })
+    })
+ 
   var rectPlayBack = ui.createRectangle(44, 534, 120, 40, 'white');  rectPlayBack.parent = groupPassLevel;
       var textTemp = ui.createText('精彩回放', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectPlayBack);
     rectPlayBack.onClick(function() {
@@ -173,9 +187,7 @@ var PlaceUi = function (paraUi) {
 
   var rectSharetoFriend = ui.createRectangle(248, 534, 120, 40, '#99ff00');  rectSharetoFriend.parent = groupPassLevel;
     var textTemp = ui.createText('分享', 24, family, 'black', 0, 0);  setTextInRect(textTemp, rectSharetoFriend);
-    rectSharetoFriend.onClick(function() {
-      window.myCoins++
-    });
+    rectSharetoFriend.onClick(shareApp);
 
     
   var rectNext = ui.createRectangle(200, 585, 180, 50, 'white');  rectNext.parent = groupPassLevel;
@@ -184,14 +196,14 @@ var PlaceUi = function (paraUi) {
       rectNext.onClick(function() {
       var dirIndex, tmp;
       [dirIndex, tmp] = window.getNextDirLevel()
-      if(window.subMyCoin(window.DirDiff[dirIndex]) === false){
+      if(window.checkAndSubMyCoin(window.DirDiff[dirIndex]) === false){
         console.log('no coins');
 
         wx.showModal({
           title: '解锁下一关需'+window.DirDiff[dirIndex]+'金币',
-          content: '分享给好友 +1 金币\r\n分享到群 +3 金币\r\n看视频 +5 金币',
+          content: '分享给好友 +1 金币\r\n看视频 +5 金币',
           showCancel: false,
-       })
+        })
        return;
       }
       groupPlaying.visible = true;
@@ -258,6 +270,8 @@ var PlaceUi = function (paraUi) {
       openDataContext.postMessage({type: 'stopShow'})
       wx.offTouchMove(updateRanking);
       wx.offTouchEnd(updateRanking);
+      if (this.retMenu === groupPassLevel)
+        showPassLevel(0);
     });
   }
 }
@@ -370,34 +384,43 @@ function setTextButtomGroup(text, group){
   text.setParent( group);  
 }
 
-function shareApp() {
-  console.log('fenxiang!');
-  // wx.showShareMenu({withShareTicket:true})
-  wx.shareAppMessage({
-    title: '小白逃生'
-  })
+window.shareMsg = {
+  title: '3D版华容道，一起来烧脑',
+  imageUrl: 'https://mmbiz.qpic.cn/mmbiz_png/hPjqozbzm2KhyTGg6dZArbX91LY2NqXupjtSJ4haxAZyUeicuwdHerRhfXGHxxiaeUJHgXOXcAaaNBjFGdmg2nRw/0?wx_fmt=png',
+  success: (res) => {
+    console.log('share ok', res)
+    if (res.shareTickets[0]) {
+        gShareTicket = res.shareTickets[0];
+    }
+  },
+  fail: (res) => {
+    console.log('share failed', res)
+    var coin = GetMyCoins() - 1;
+    SetMyCoins(coin)
+    coinsUi.text = ''+coin+' 金币'
+  }
 }
 
-function showRank() {
+window.shareApp = function () {
+  wx.shareAppMessage(shareMsg)
+  var coin = GetMyCoins() + 1;
+  SetMyCoins(coin)
+  coinsUi.text = ''+coin+' 金币'
+}
+
+function showRank(ticket) {
   this.parent.visible = false;
   rankingRetSprite.visible = true;
   rankingRetSprite.retMenu = this.parent;
   ranking.visible = true;
-  openDataContext.postMessage({
-    type: 'friends',
-    key: 'score',
-    openId: 'oyJjl5dYt5dB4-jS5ifbsbToVYZ0'})
+  if (ticket)
+    openDataContext.postMessage({type: 'group',text: ticket,})
+  else
+    openDataContext.postMessage({type: 'friends',})
   updateRanking()
-  var count_uiRedraw = 0;
-  var flag_uiRedraw = setInterval(function(max) {
-          if (count_uiRedraw >= max) {
-              clearInterval(flag_uiRedraw);
-              return;
-          }
-          updateRanking()
-          count_uiRedraw = count_uiRedraw + 1;
-      }, 1000, 3);
-  
+  var flag_uiRedraw = setInterval(function() {updateRanking()}, 500);
+  setTimeout(function(){clearInterval(flag_uiRedraw);},5*1000)
+
   wx.onTouchMove(updateRanking);
   wx.onTouchEnd(updateRanking);
 }
@@ -408,16 +431,10 @@ window.setUiDirFile = function(text){
 
 window.showPassLevel = function(score){
   openDataContext.postMessage({type: 'aboutMe', score: score})
+
   updateRanking()
-  var count_uiRedraw = 0;
-  var flag_uiRedraw = setInterval(function(max) {
-          if (count_uiRedraw >= max) {
-              clearInterval(flag_uiRedraw);
-              return;
-          }
-          updateRanking()
-          count_uiRedraw = count_uiRedraw + 1;
-      }, 1000, 3);
+  var flag_uiRedraw = setInterval(function() {updateRanking()}, 500);
+  setTimeout(function(){clearInterval(flag_uiRedraw);},5*1000)
   
   groupTut.visible = false;
   groupTut_01.visible = false;
