@@ -10,7 +10,6 @@ var Text = Text||require('./Text.js');
 // All properties that when adjusted will force a redraw of the UI
 var dirtyProperties = ['x','y','width','height','rotation','alpha','visible','pivot','anchor','smoothing','stretch','offset','text','scale','parent','textAlign','assetPath','color','left','right','up','down','ActiveInvoke'];
 var DPR = window.devicePixelRatio;  
-console.log("devicePixelRatio="+DPR);
 var observeDirtyProperties = function(object, ui) {
 	dirtyProperties.forEach(function(prop) {
 		var proxyKey = '_proxied_' + prop;
@@ -289,7 +288,7 @@ ThreeUI.prototype.clickHandler = function(event) {
 	} else {
 		// Mouse event
 		coords = { x: event.pageX, y: event.pageY };
-		console.log('coords'+coords)		
+		console.log('coords', coords)		
 	}
 
 	if (this.listeningToTouchEvents && event instanceof MouseEvent || coords === null) return;
@@ -406,9 +405,6 @@ ThreeUI.prototype.setPlaneMovHeight = function(newHeight) {
 	canvas.height = this.heightMovCanvas;
 	this.contextMov = canvas.getContext('2d');
 	this.contextMov.scale(DPR*this.width/414, DPR*this.height/736)
-	console.log('setPlaneMovHeight')
-	console.log(this.newHeightIphone6P, this.heightMovCanvas)
-	console.log(this.newHeightIphone6P/this.heightMovCanvas, 736/(this.height*DPR))
 
 	this.textureMov = new THREE.Texture(canvas);
 	var material = new THREE.MeshBasicMaterial({ map: this.textureMov , transparent : true});

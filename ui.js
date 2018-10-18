@@ -68,7 +68,7 @@ var PlaceUi = function (paraUi) {
     var rankingSprite = ui.createGroup(133, 630, 50, 80);
       var temp = ui.createSprite('images/paihang.png', 0, 0, 50, 50);  temp.parent = rankingSprite;
       var textTemp = ui.createText('排行榜', 20, family, 'white', 0, 0);  setTextButtomGroup(textTemp, rankingSprite)
-      rankingSprite.onClick(showRank);
+      rankingSprite.onClick(function(){showRank.bind(this)(gShareTicket)});
 
     var xiaoxi = ui.createGroup(228, 630, 50, 80);
       var temp = ui.createSprite('images/message.png',0, 0, 50, 50);  temp.parent = xiaoxi;
@@ -101,7 +101,7 @@ var PlaceUi = function (paraUi) {
       groupPlaying.visible = true;
     })
     
-    var startX = 50, startY = 50, w = 300, h = 64/*32*/, pad = 14
+    var startX = 50, startY = 50, w = 310, h = 64/*32*/, pad = 14
     for (var i = 0; i < window.levelDirs.length; ++i){
       var colorIndex = i % colors.length;
       var rectLevelDir = ui.createRectangle( startX , startY + i*(h + pad), w, h, colors[colorIndex][0], colors[colorIndex][1]);
@@ -111,8 +111,16 @@ var PlaceUi = function (paraUi) {
       var textTemp = ui.createText(difficults[window.DirDiff[i]], 18, family, 'black', 5, 5);  textTemp.setParent(rectLevelDir)
       var total, passed;
       [total, passed] = getDirPassInfo(i)
-      arrLvPassedUi[i] = ui.createText('['+passed, 20, family, 'black', 230, 20);  arrLvPassedUi[i].setParent(rectLevelDir)
-      var textTemp = ui.createText('/'+total+']', 20, family, 'black', 250, 20);  textTemp.setParent(rectLevelDir)
+      if (total === 0){
+        total='/在建]';
+        passed = '['+passed;
+      }else{
+        total  = (total < 10)?'/ '+total:'/'+total
+        total += ']'
+        passed = (passed < 10)?'[ '+passed:'['+passed;
+      }
+      arrLvPassedUi[i] = ui.createText(passed, 20, family, 'black', 230, 20);  arrLvPassedUi[i].setParent(rectLevelDir)
+      var textTemp = ui.createText(total, 20, family, 'black', 260, 20);  textTemp.setParent(rectLevelDir)
 
       rectLevelDir.index = i;
       rectLevelDir.onClick(function() {
@@ -405,7 +413,7 @@ window.shareMsg = {
   imageUrl: 'https://mmbiz.qpic.cn/mmbiz_png/hPjqozbzm2KhyTGg6dZArbX91LY2NqXupjtSJ4haxAZyUeicuwdHerRhfXGHxxiaeUJHgXOXcAaaNBjFGdmg2nRw/0?wx_fmt=png',
   success: (res) => {
     console.log('share ok', res)
-    if (res.shareTickets[0]) {
+    if (res.shareTickets && res.shareTickets[0]) {
         gShareTicket = res.shareTickets[0];
     }
   },
@@ -465,7 +473,11 @@ function refreshPassed(){
   var total, passed;
   for (var i = 0; i < window.levelDirs.length; ++i){
     [total, passed] = getDirPassInfo(i)
-    arrLvPassedUi[i].text = '['+passed
+    if (passed < 10)
+      var temp = '[ '+passed;
+    else
+      var temp = '['+passed;    
+    arrLvPassedUi[i].text = temp
   }
 }
 

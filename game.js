@@ -4,6 +4,7 @@ import * as THREE from './libs/threejs/three'
 import './libs/threejs/controls/OrbitControls'
 window.THREE = THREE
 var TWEEN = TWEEN||require('./libs/threejs/Tween');
+window.TWEEN = TWEEN
 var InitMouseMov = InitMouseMov||require('./mouseMov.js');
 var AssetLoader = AssetLoader||require('./libs/threejs/threeUi/AssetLoader');
 
@@ -11,6 +12,7 @@ var ThreeUI = ThreeUI||require('./libs/threejs/threeUi/ThreeUI.js');
 window.ThreeUI = ThreeUI
 
 var PlaceUi = PlaceUi||require('./ui.js');
+var SimpleParticle = SimpleParticle||require('./SimpleParticle');
 
 
 AssetLoader.add.image('images/fenxiang.png');
@@ -33,7 +35,7 @@ window.levelDirs = ['帮助','1水瓶座','2双鱼座','3白羊座','4金牛座'
 window.DirDiff = [1,1,2,1,2,2,3,3,3,4,4,4,5]
 
 
-var camera, scene, controls, renderer, ui, placeUi, initMouseMov;
+var camera, scene, controls, renderer, ui, placeUi, initMouseMov, simpleParticle;
 var movDirPic;
 var bgPlane = null;
 var rooms = [];
@@ -349,7 +351,8 @@ window.checkAndSubMyCoin = function (dirIndex, fileIndex){
     SetMyCoins(myCoins)
     return true;
   }
-  return false;
+  return true
+  // return false;
 }
 
 window.getNextDirLevel = function (){
@@ -369,15 +372,12 @@ function passDirLevel(){
 }
 
 function init() {
-  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true});
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.autoClear = false; // To allow render overlay on top of sprited sphere
   scene = new THREE.Scene();
   // scene.background = new THREE.Color(window.bgColor);//0xc2ebce);
-
-  ui = new ThreeUI(renderer.domElement, window.innerHeight, true);  
-  placeUi = new PlaceUi(ui);
 
   // camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
   var w = Math.sqrt(400*400 + 400*400), h = w* window.innerHeight/window.innerWidth
@@ -389,6 +389,10 @@ function init() {
   camera.remove(bgPlane)
   bgPlane = creatGradPlane(0,0, -1500, w, h, [[0, '#fc3'], [1, '#fcc']])
   camera.add(bgPlane);  
+
+  ui = new ThreeUI(renderer.domElement, window.innerHeight, true);  
+  placeUi = new PlaceUi(ui);
+  simpleParticle = new SimpleParticle(camera)
 
   var axesHelper = new THREE.AxesHelper(400);
   scene.add(axesHelper);
@@ -420,8 +424,7 @@ function initLight(){
   camera.add( directionalLightUp );  camera.add( directionalLightDown );  
   camera.add( directionalLightLeft );  camera.add( directionalLightRight );    
 
-  // pointLight = new THREE.PointLight( 0x020202, 1 );
-  // scene.add( particleLight );  
+  // pointLight = new THREE.PointLight( 0x111111, 0.5 );
   // camera.add( pointLight );  
 }
 function moveLight(midP, camDisdance){
@@ -436,42 +439,20 @@ function moveLight(midP, camDisdance){
 var arrMat = [];
 function initMat(cnt){
   arrMat = [];
-  if (cnt <= 18){
-    var hColor = 0.1 * Math.random()
+  // if (cnt <= 18){
+    var hColor = Math.random()
     var step = 1/cnt    
     for (var i = 0; i < cnt; ++i) {
       hColor += step;
       if (hColor > 1)
         hColor -= 1;
-      console.log('hColor', i, hColor)
-      if (i % 2)
-        arrMat.push(new THREE.MeshPhongMaterial({ color:new THREE.Color().setHSL(hColor, 0.5, 0.5),  
-                                  specular:0xffffff, shininess:30 }));
-      else
-        arrMat.push(new THREE.MeshStandardMaterial({ color:new THREE.Color().setHSL(hColor, 0.5, 0.5),  
-                                metalness:0.1, roughness:0.1 }));
+      // if (i % 2)
+        arrMat.push(new THREE.MeshPhongMaterial({ color:new THREE.Color().setHSL(hColor, 0.8, 0.5),  
+                                  specular:0xffffff, shininess:30, transparent:true, opacity:0.85 }));
+      // else
+      //   arrMat.push(new THREE.MeshStandardMaterial({ color:new THREE.Color().setHSL(hColor, 0.5, 0.5),  
+      //                           metalness:0.5, roughness:0.1, transparent:true, opacity:0.8 }));
     }
-  } else {
-    var hColor = 0.1 * Math.random()
-    for (var i = 0; i < 18; ++i) {
-      hColor += 1/18;
-      if (hColor > 1)
-        hColor -= 1;
-      console.log('hColor', hColor)
-      if (i % 2)
-        arrMat.push(new THREE.MeshPhongMaterial({ color:new THREE.Color().setHSL(hColor, 0.5, 0.5),  
-                                  specular:0xffffff, shininess:30 }));
-      else
-        arrMat.push(new THREE.MeshStandardMaterial({ color:new THREE.Color().setHSL(hColor, 0.5, 0.5),  
-                                metalness:0.1, roughness:0.1 }));
-    }
-    for (var i = 0; i < cnt - 18; ++i) {
-      if (i % 2)
-        arrMat.push(matShaderRgb)
-      else
-        arrMat.push(new THREE.MeshNormalMaterial())
-    }
-  }
 }
 
 function creatGradPlane(x,y,z, w,h, colors ,startX, startY, endX, endY){
@@ -518,6 +499,7 @@ function removeCubes(){
   scene.remove(roomEdges);
   roomEdges = null;
 
+  simpleParticle.hide(0)
   TWEEN.removeAll();
   movDoors.forEach(function(item){ 
     scene.remove(item); 
@@ -841,6 +823,7 @@ Group.prototype.onPointerUp = function (movedSteps, selectMeshInitPos) {
         setDirLevel(currentDirIndex, currentFileIndex, 1)
         score = 1
       }
+      simpleParticle.explode(0,0,0)
       window.showPassLevel(score);
     }
     else {

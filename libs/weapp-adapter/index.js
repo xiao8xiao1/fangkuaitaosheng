@@ -15,7 +15,6 @@ function inject() {
         _window.document.removeEventListener(type, listener)
     }
     _window.dispatchEvent = function(event = {}) {
-        console.log('window.dispatchEvent', event.type, event);
         // nothing to do
     }
 

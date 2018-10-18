@@ -29,17 +29,14 @@ export default function Canvas() {
     canvas.blur = function() {};
 
     canvas.addEventListener = function(type, listener, options = {}) {
-        // console.log('canvas.addEventListener', type);
         document.addEventListener(type, listener, options);
     }
 
     canvas.removeEventListener = function(type, listener) {
-        // console.log('canvas.removeEventListener', type);
         document.removeEventListener(type, listener);
     }
 
     canvas.dispatchEvent = function(event = {}) {
-        console.log('canvas.dispatchEvent', event.type, event);
         // nothing to do
     }
 

@@ -3,31 +3,41 @@ let screenHeight = wx.getSystemInfoSync().screenHeight
 let ratio = wx.getSystemInfoSync().pixelRatio
 
 let sharedCtx = wx.getSharedCanvas().getContext('2d')
-console.log(wx.getSystemInfoSync())
-console.log('open sharedCtx', wx.getSharedCanvas().width, wx.getSharedCanvas().height, ratio)
-sharedCtx.scale(1, 1)
-sharedCtx.save()
+let scalesX = screenWidth*ratio / 414, scalesY = screenHeight*ratio / 736
+sharedCtx.scale(scalesX, scalesY)
 
 let itemCanvas = wx.createCanvas()
 let itemCtx = itemCanvas.getContext('2d')
+
 let myScore = undefined
 let myInfo = {}
 let myRank = undefined
-// let stY = 290
-let stY = 120 * (750/736) * (screenHeight/screenWidth)
+let stY = 120 
+var listLength ;
 
+var fakedatas = []
 getUserInfo()
+
+var imgNo = [wx.createImage(),wx.createImage(),wx.createImage()]
+imgNo[0].src = 'images/first.jpg'
+imgNo[1].src = 'images/second.jpg'
+imgNo[2].src = 'images/third.jpg'
+imgNo[0].onload = function() { 
+    imgNo[0].loaded = true }
+imgNo[1].onload = function() {
+    imgNo[1].loaded = true }
+imgNo[2].onload = function() {
+    imgNo[2].loaded = true }
 
 // wx.removeUserCloudStorage({
 //     keyList: ['score', 'maxScore'],
 // })
 
-let fakedatas = []
 function fakeData(count){
     var item = new Object()
     myInfo.avatarUrl = 'images/suc.png'
     myInfo.nickName = '宏伟'
-    myScore = '100'
+    myScore = '16'
     myRank = 4
     for (var i = 0; i < count;  ++i){
         var item = new Object()
@@ -41,65 +51,67 @@ function fakeData(count){
     fakedatas[4].nickname = '宏伟'
 }
 
+let itemHeight = 50
 // 初始化标题返回按钮等元素
 function initFrame(type) {
     sharedCtx.restore()
     sharedCtx.save()
 
-    sharedCtx.clearRect(0, 0, screenWidth * ratio, screenHeight * ratio)
+    sharedCtx.clearRect(0, 0, 414, 736)
 
     // 画背景
     sharedCtx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-    sharedCtx.fillRect(0, 0, screenWidth * ratio, screenHeight * ratio)
-    // sharedCtx.scale(ratio, ratio)
-    // 按照 750的尺寸绘制
-    let scales = screenWidth*ratio / 750
-    sharedCtx.scale(scales, scales)
+    sharedCtx.fillRect(0, 0, 414, 736)
 
     // 画标题
     sharedCtx.fillStyle = '#fff'
-    sharedCtx.font = 'bold 50px Arial'
+    sharedCtx.font = 'bold 32px Arial'
     sharedCtx.textAlign = 'center'
     if (type === undefined)
-        sharedCtx.fillText('通关', 750 / 2, stY - 20);
+        sharedCtx.fillText('通关', 414 / 2, stY - 20);
     else if (type === 1) 
-        sharedCtx.fillText('好友排行榜', 750 / 2, stY - 20);
+        sharedCtx.fillText('好友排行榜', 414 / 2, stY - 20);
     else if (type === 2) 
-        sharedCtx.fillText('群友排行榜', 750 / 2, stY - 20);        
+        sharedCtx.fillText('群友排行榜', 414 / 2, stY - 20);        
 
     // 排名列表外框
     sharedCtx.fillStyle = '#302F30'
-    sharedCtx.fillRect(80, stY, 750 - 80 * 2, 650)
-
-    // 排行榜提示
-    // sharedCtx.fillStyle = '#8D8D8D'
-    // sharedCtx.font = '20px Arial'
-    // sharedCtx.textAlign = 'left'
-    // sharedCtx.fillText('每周一凌晨刷新', 100, stY + 40)
-
-    // 自己排名外框
-    sharedCtx.fillStyle = '#302F30'
-    sharedCtx.fillRect(80, stY + 670, 750 - 80 * 2, 120)
-
-    // // 返回按钮
-    // let returnImage = wx.createImage()
-    // returnImage.src = 'images/return.png'
-    // returnImage.onload = () => {
-    //     sharedCtx.drawImage(returnImage, 80, 1120, 100, 100)
-    // }
+    sharedCtx.fillRect(40, stY, 414 - 40 * 2, itemHeight*7)
 }
-let itemHeight = 590/6
+function drawAPerson(item, index, YStart, itemCanvasStartY) {
+    let avatar = wx.createImage()
+    avatar.src = item.avatarUrl
+    avatar.onload = function() {
+        itemCtx.drawImage(avatar, 50, YStart + 5, 40, 40)
+        if (itemCanvasStartY !== undefined && --listLength === 0)
+            reDrawItem(itemCanvasStartY)
+    }
+    avatar.onerror = function() {
+        if (itemCanvasStartY !== undefined && --listLength === 0)
+            reDrawItem(itemCanvasStartY)
+    }
+    itemCtx.fillStyle = '#fff'
+    itemCtx.font = '16px Arial'
+    itemCtx.textAlign = 'left'
+    itemCtx.fillText(item.nickname, 110, YStart + 35)
+
+    itemCtx.font = 'bold 24px Arial'
+    itemCtx.textAlign = 'right'
+    itemCtx.fillText(item.score || 0, 300, YStart + 35)
+
+    drawRankingNum(itemCtx, index, 0, YStart)
+}
+
 function initRanklist (list, itemCanvasStartY) {
     if (itemCanvasStartY === undefined){
         itemCanvasStartY = 0
     }
     // 至少绘制6个
     let length = Math.max(list.length, 6)
-
-    // itemCanvas.width = screenWidth - 40 * 2
-    // itemCanvas.height = itemHeight * length
-    itemCanvas.width = (750 - 80 * 2)
-    itemCanvas.height = itemHeight * length
+    itemCanvas.width = (414 - 40 * 2) * scalesX
+    itemCanvas.height = itemHeight * length * scalesY
+    itemCtx.scale(scalesX, scalesY)
+    topPosMax = itemHeight * length - 300
 
     itemCtx.clearRect(0, 0, itemCanvas.width, itemCanvas.height)
 
@@ -111,121 +123,61 @@ function initRanklist (list, itemCanvasStartY) {
         }
         itemCtx.fillRect(0, i * itemHeight, itemCanvas.width, itemHeight)
     }
-    var listLength = list.length
-    if (list && list.length >0) {
-        list.forEach((item, index) => {
-            let avatar = wx.createImage()
-            avatar.src = item.avatarUrl
-            avatar.onload = function() {
-                itemCtx.drawImage(avatar, 100, index*itemHeight + 14, 70, 70)
-                if (--listLength === 0)
-                    reDrawItem(itemCanvasStartY)
-            }
-            avatar.onerror = function() {
-                if (--listLength === 0)
-                    reDrawItem(itemCanvasStartY)
-            }
-            itemCtx.fillStyle = '#fff'
-            itemCtx.font = '28px Arial'
-            itemCtx.textAlign = 'left'
-            itemCtx.fillText(item.nickname, 190, index * itemHeight + 54)
-            itemCtx.font = 'bold 36px Arial'
-            itemCtx.textAlign = 'right'
-            itemCtx.fillText(item.score || 0, 550, index * itemHeight + 60)
-
-            // itemCtx.font = 'italic 44px Arial'
-            // itemCtx.textAlign = 'center'
-            // itemCtx.fillText(index + 1, 46, index * itemHeight + 64)
-            drawRankingNum(index, index * itemHeight, itemCanvasStartY)
-        })
-    } else {
-        // 没有数据
-    }
-
-   reDrawItem(itemCanvasStartY)
+    listLength = list.length
+    list.forEach((item, index) => {
+        drawAPerson(item, index, itemHeight * index, itemCanvasStartY)
+    })
+    reDrawItem(itemCanvasStartY)
 }
 
 /**
  * 绘制名次
  */
-function drawRankingNum(num, y, itemCanvasStartY) {
-    let image = wx.createImage()
-    image.onload = () => {
-      itemCtx.drawImage(image, 20, y + 20, 60, 60)
-      reDrawItem(itemCanvasStartY)
-    }
+function drawRankingNum(ctx, num, x, y) {
     // 名次从0开始
-    switch (num) {
-      case 0:
-        image.src = 'images/first.jpg'
-        break
-      case 1:
-        image.src = 'images/second.jpg'
-        break
-      case 2:
-        image.src = 'images/third.jpg'
-        break
-      default:
-        itemCtx.font = 'italic 45px Arial'
-        itemCtx.textAlign = 'center'
-        itemCtx.fillText(num + 1, 46, y + 62)
+    if (num < 3 && imgNo[num] && imgNo[num].loaded) {
+        ctx.drawImage(imgNo[num], x + 10, y+10, 30, 30)
+    } else{
+        ctx.font = 'italic 28px Arial'
+        ctx.textAlign = 'center'
+        ctx.fillText(num + 1, x + 20, y + 35)
     }
-  }
-  
+} 
 
 // 绘制自己的排名
 function drawMyRank () {
+    // 自己排名外框
+    sharedCtx.fillStyle = '#302F30'
+    sharedCtx.fillRect(40, stY + itemHeight*7.5, 414 - 40 * 2, itemHeight*1.2)
+
     if (myInfo.avatarUrl && myScore) {
+        var YStart = stY + itemHeight *7.6
+        var XStart = 40
         let avatar = wx.createImage()
         avatar.src = myInfo.avatarUrl
         avatar.onload = function() {
-            sharedCtx.drawImage(avatar, 180, stY + 670 + 24, 70, 70)
+            sharedCtx.drawImage(avatar, XStart + 50, YStart + 5, 40, 40)
         }
         sharedCtx.fillStyle = '#fff'
-        sharedCtx.font = '28px Arial'
+        sharedCtx.font = '18px Arial'
         sharedCtx.textAlign = 'left'
-        sharedCtx.fillText(myInfo.nickName, 270, stY + 670 + 72)
-        sharedCtx.font = 'bold 36px Arial'
+        sharedCtx.fillText(myInfo.nickName, XStart + 110, YStart + 35)
+
+        sharedCtx.font = 'bold 24px Arial'
         sharedCtx.textAlign = 'right'
-        sharedCtx.fillText(myScore || 0, 630, stY + 670 + 76)
-        // 自己的名次
-        // if (myRank !== undefined) {
-        //     sharedCtx.font = 'italic 44px Arial'
-        //     sharedCtx.textAlign = 'center'
-        //     sharedCtx.fillText(myRank + 1, 126, stY + 670 + 80)
-        // }
-        // 名次
-        let image = wx.createImage()
-        image.onload = () => {
-        sharedCtx.drawImage(image, 100, stY + 700, 60, 60)
-        }
-        // 名次从0开始
-        switch (myRank) {
-        case 0:
-            image.src = 'images/first.jpg'
-            break
-        case 1:
-            image.src = 'images/second.jpg'
-            break
-        case 2:
-            image.src = 'images/third.jpg'
-            break
-        default:
-            sharedCtx.fillStyle = '#FFFFFF'
-            sharedCtx.font = 'italic 45px Arial'
-            sharedCtx.textAlign = 'center'
-            sharedCtx.fillText(myRank + 1, 126, stY + 670 + 80)
-        }       
+        sharedCtx.fillText(myScore || 0, XStart + 300, YStart + 35)
+
+        drawRankingNum(sharedCtx, myRank, XStart, YStart)
     }
-    // sharedCtx.fillRect(40, 480, screenWidth - 40 * 2, 60)
 }
 // 因为头像绘制异步的问题，需要重新绘制
 function reDrawItem(y) {
     // console.log('reDrawItem', y)
-    sharedCtx.clearRect(80, stY + 60, 750 - 80 * 2, 590)
+    sharedCtx.clearRect(40, stY + itemHeight, 414 - 40 * 2, itemHeight*6)
     sharedCtx.fillStyle = '#302F30'
-    sharedCtx.fillRect(80, stY + 60, 750 - 80 * 2, 590)
-    sharedCtx.drawImage(itemCanvas, 0, y, 750 - 80 * 2, 590, 80, stY + 60, 750 - 80 * 2, 590)
+    sharedCtx.fillRect(40, stY + itemHeight, 414 - 40 * 2, itemHeight*6)
+    sharedCtx.drawImage(itemCanvas, 0, y*scalesY, (414 - 40 * 2)*scalesX, (itemHeight*6)*scalesY,
+                                    40, stY + itemHeight, 414 - 40 * 2, itemHeight*6)
     //
     // sharedCtx.drawImage(itemCanvas, 40, y+175, screenWidth - 40 * 2, 295)
 }
@@ -271,7 +223,8 @@ function getUserInfo() {
         lang: 'zh_CN',
         success: res => {
             console.log(res)
-            myInfo = res.data[0]
+            if (res.data[0])
+                myInfo = res.data[0]
             // fakeData(20)
         },
         fail: res => {
@@ -374,8 +327,8 @@ wx.onMessage(data => {
         // 更新最高分
         console.log('更新最高分')
     } else if (data.type === 'stopShow') {
-        // wx.offTouchMove(onMoveRank)
-        // wx.offTouchEnd(onUpRank)
+        wx.offTouchMove(onMoveRank)
+        wx.offTouchEnd(onUpRank)
         show = false
         console.log('off')    
     }
@@ -383,26 +336,33 @@ wx.onMessage(data => {
 wx.onTouchMove(onMoveRank)
 wx.onTouchEnd(onUpRank)
 
-let startY = undefined, movedY = 0
-
+let lastY = undefined, topPos = 0;
 let show = false
+let screenHvs736 = screenHeight/736
+var topPosMax;
 function onMoveRank(e) {
     if (!show)  return
-    let touch = e.touches[0]
+    // let touch = e.touches[0]
+    var touch = e.changedTouches ? e.changedTouches[0] : e;    
     // 触摸移动第一次触发的位置
-    if (startY === undefined) {
-        startY = touch.clientY*ratio + movedY
+    if (lastY === undefined) {
+        lastY = touch.clientY
+        return;
     }
-    movedY = startY - touch.clientY*ratio
-    reDrawItem(movedY)
+    var movedY = (lastY - touch.clientY)*screenHvs736
+    topPos += movedY
+    reDrawItem(topPos)
+    lastY = touch.clientY
 }
+
 function onUpRank(e) {
-    if (!show)  return
-    startY = undefined
-    if (movedY < 0) { // 到顶
-        movedY = 0
-    } else if (movedY > itemCanvas.height - 590) { // 到底
-        movedY = itemCanvas.height - 590
+    if (!show)  return;
+
+    lastY = undefined
+    if (topPos < 0) { // 到顶
+        topPos = 0
+    } else if (topPos > topPosMax) { // 到底
+        topPos = topPosMax
     }
-    reDrawItem(movedY)
+    reDrawItem(topPos)
 }

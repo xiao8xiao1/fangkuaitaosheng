@@ -60,12 +60,10 @@ export default class Audio extends HTMLAudioElement {
         console.warn('HTMLAudioElement.load() is not implemented.')
     }
     static get mute() {
-        console.log('get mute ='+mute);
         return mute
     }
 
     static set mute(value) {
-        console.log('set mute'+value);
         mute = value
     }
     play() {

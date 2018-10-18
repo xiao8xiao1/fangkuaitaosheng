@@ -98,7 +98,6 @@ var InitMouseMov = function (renderer, scene, camera, groups, groupPlaying){
         mov2.y = startPos.y - pointer.clientY;
         if (Math.abs(mov2.x) <= 2 && Math.abs(mov2.y) <= 2)
           return;
-        // console.log("mouse move", mov2.x, mov2.y)
         if (plane === null) {
           chooseDir.copy(selectMesh.getGroupDir());
           eye.copy(camera.position).sub(selectMesh.position);
